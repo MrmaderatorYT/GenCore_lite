@@ -1,0 +1,2 @@
+rootProject.name = "CCS Code"
+include ':app'

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:scaleType="fitXY">
+    <ImageView
+        android:id="@+id/create_new_file"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_add"
+        android:scaleType="fitXY"/>
+        <ImageView
+        android:id="@+id/compile"
+        android:layout_width="wrap_content"
+        android:layout_below="@id/create_new_file"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_done"
+        android:scaleType="fitXY"/>
+    </RelativeLayout>
+    <!-- Список файлів -->
+    <ListView
+        android:id="@+id/fileList"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"/>
+
+    <!-- Поле для редагування тексту -->
+    <EditText
+        android:id="@+id/editor"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="4"
+        android:background="@android:color/white"
+        android:gravity="start|top"
+        android:padding="10dp"
+        android:scrollbars="vertical"/>
+
+
+</LinearLayout>
