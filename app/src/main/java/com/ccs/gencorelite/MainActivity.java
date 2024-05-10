@@ -1,16 +1,12 @@
 package com.ccs.gencorelite;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.content.res.AssetManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -22,18 +18,21 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.ccs.gencorelite.compiler.ProjectCompiler;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.ccs.gencorelite.createProject.CreateFileAndFolder;
 import com.ccs.gencorelite.data.PreferenceConfig;
 import com.ccs.gencorelite.editor.Editor;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView newProject, loadProject, title, create, return_text;
+    private TextView newProject, loadProject, title, create, return_text, version;
     private EditText edit_name_new_pr, edit_package_new_pr, edit_version_new_pr;
     private ImageView logo, schematic_logo;
 
@@ -52,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         newProject = findViewById(R.id.new_project);
         edit_name_new_pr = findViewById(R.id.edit_name_pr);
+        version = findViewById(R.id.version);
         edit_package_new_pr = findViewById(R.id.edit_package_pr);
         edit_version_new_pr = findViewById(R.id.edit_version_pr);
         logo = findViewById(R.id.logo);
@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
                 schematic_logo.setVisibility(View.VISIBLE);
                 return_text.setVisibility(View.VISIBLE);
                 create.setVisibility(View.VISIBLE);
+                version.setVisibility(View.INVISIBLE);
 
                 logo.setVisibility(View.INVISIBLE);
                 title.setVisibility(View.INVISIBLE);
@@ -111,12 +112,11 @@ public class MainActivity extends AppCompatActivity {
                 PreferenceConfig.setTitle(getApplicationContext(), name_pr);
                 PreferenceConfig.setVersion(getApplicationContext(), version_pr);
 
-                CreateFileAndFolder.createFolder(MainActivity.this, name_pr);
+                createFileInProjectFolder(name_pr, "array.txt", "ааа");
 
                 Intent intent = new Intent(MainActivity.this, Editor.class);
                 startActivity(intent);
                 overridePendingTransition(0, 0);
-
 
             }
         });
@@ -147,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         fadeInAnimation();
+        CreateFileAndFolder.makeFolderSchema(getFilesDir()+"schema");
         edit_name_new_pr.setVisibility(View.INVISIBLE);
         edit_version_new_pr.setVisibility(View.INVISIBLE);
         edit_package_new_pr.setVisibility(View.INVISIBLE);
@@ -155,6 +156,43 @@ public class MainActivity extends AppCompatActivity {
         return_text.setVisibility(View.INVISIBLE);
         create.setVisibility(View.INVISIBLE);
     }
+    private void createFileInProjectFolder(String folderName, String fileName, String data) {
+        FileOutputStream fos = null;
+        try {
+            // Отримання шляху до папки Projects
+            File projectsFolder = new File(getFilesDir()+"/Projects/"+folderName);
+            // Перевірка чи папка Projects існує, якщо ні - створення
+
+            // Отримання шляху до папки проєкту в папці Projects
+            File projectFolder = new File(projectsFolder, folderName);
+            // Перевірка чи папка проєкту існує, якщо ні - створення
+            if (!projectFolder.exists()) {
+                projectFolder.mkdirs();
+            }
+
+            // Створення файлового виводу
+            File file = new File(projectFolder, fileName);
+            Log.d("App", "Project folder: "+ projectFolder.toString());
+            fos = new FileOutputStream(file);
+            // Запис даних у файл
+            fos.write(data.getBytes());
+            Toast.makeText(this, "File created successfully", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error creating file", Toast.LENGTH_SHORT).show();
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+
+
 
     private void showFolderDialog() {
         ArrayList<String> folderNames = getFolderNames();
@@ -183,17 +221,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void showFolderOptionsDialog(String folderName) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Choose project");
-        builder.setItems(new CharSequence[]{"Open", "Rename", "Delete"},
+        builder.setTitle(folderName);
+        builder.setItems(new CharSequence[]{getResources().getString(R.string.open), getResources().getString(R.string.rename), getResources().getString(R.string.delete)},
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         switch (which) {
                             case 0:
+                                PreferenceConfig.setTitle(getApplicationContext(), folderName);
+                                openFolder(folderName);
+                                break;
+                            case 1:
                                 // Опція "Перейменувати"
                                 renameFolder(folderName);
                                 break;
-                            case 1:
+                            case 2:
                                 // Опція "Видалити"
                                 deleteFolder(folderName);
                                 break;
@@ -243,4 +285,22 @@ public class MainActivity extends AppCompatActivity {
         }
         return folderNames;
     }
+    private void openFolder(String folderName) {
+        // Отримуємо шлях до папки
+        File folder = new File(getFilesDir(), "Projects" + File.separator + folderName);
+        String folderStr = folder.toString();
+        Log.d("App", "Dir: "+folderStr);
+
+        // Отримуємо список файлів у папці
+        File[] files = folder.listFiles();
+
+        // Тепер ви можете зробити що завгодно з цими файлами, наприклад, відобразити їх у ListView або RecyclerView
+        // Чи виконати будь-яку іншу логіку, яка вам потрібна для роботи з цими файлами
+
+
+        Intent intent = new Intent(MainActivity.this, Editor.class);
+        startActivity(intent);
+        overridePendingTransition(0, 0);
+    }
+
 }

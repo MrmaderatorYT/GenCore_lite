@@ -2,7 +2,6 @@ package com.ccs.gencorelite.editor;
 
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -15,27 +14,40 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.ccs.gencorelite.R;
 import com.ccs.gencorelite.compiler.ProjectCompiler;
+import com.ccs.gencorelite.data.PreferenceConfig;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Editor extends AppCompatActivity {
     private ListView fileList;
     private EditText editor;
     private ImageView compile;
+    private boolean isRunning = true;
+    private String title;
+    private String previousText = ""; // зберігаємо попередній текст
+
+    //private final Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
+
+        title = PreferenceConfig.getTitle(this);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -51,10 +63,28 @@ public class Editor extends AppCompatActivity {
         compile = findViewById(R.id.compile);
 
 
+        Timer timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                // Викликати ваш метод кожні 10 секунд
+                saveData(title,"array.txt", editor.getText().toString());
+                System.out.println("Text of saved file: "+ editor.getText().toString());
+            }
+        };
+
+        // Запускати завдання кожні 10 секунд (10000 мілісекунд)
+        timer.schedule(task, 1, 10000);
+
+
         compile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                compileApp();
+                try {
+                    compileApp();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
 
@@ -78,11 +108,11 @@ public class Editor extends AppCompatActivity {
                 // Можна використовувати це ім'я файлу для завантаження тексту файлу та відображення його в редакторі
                 // З цієї точки ви можете реалізувати завантаження тексту файлу та відображення його в полі редактора
                 if (fileName.contains("array.txt")) {
-                    printFileContentToLog(Editor.this, "app/resources/" + fileName);
+                    readFile(title, "array.txt");
 //                } else if (fileName.equals("AndroidManifest.xml")) {
 //                    printFileContentToLog(Editor.this, "file:///android_assets/manifest/" + fileName);
-                } else if (fileName.contains(".xml")&&fileName.contains("activity")) {
-                    printFileContentToLog(Editor.this, "app/layout/" + fileName);
+//                } else if (fileName.contains(".xml")&&fileName.contains("activity")) {
+//                    readFile("app/layout/" + fileName);
                 }
             }
         });
@@ -113,57 +143,140 @@ public class Editor extends AppCompatActivity {
     }
 
     // Метод для збереження даних в реальному часі
-    private void saveData(String fileName, String data) {
-        FileOutputStream fos = null;
+
+
+    private void compileApp() throws IOException {
+        Context context = Editor.this;
+        // Шлях до папки зі скомпільованими Java файлами
+        String compiledFilesDir = getFilesDir()+"schema";
+
+        // Шлях до вихідної директорії для збереження скомпільованого коду
+        String outputDirPath = "/storage/emulated/0/Download/Schema";
+        File outputDir = new File(outputDirPath);
+        if (!outputDir.exists()) {
+            outputDir.mkdirs(); // Створення директорії, якщо вона не існує
+        }
+
+// Шлях до вихідного APK файлу
+        String apkFilePath = outputDirPath + "/app.apk";
+        File outputFile = new File(apkFilePath);
+
+
+        // Компілюємо Java файли в Dalvik bytecode
+        boolean success = ProjectCompiler.compileToDex(compiledFilesDir, outputFile.getAbsolutePath());
+
+        if (success) {
+            System.out.println("APK файл успішно створено: " + apkFilePath);
+        } else {
+            System.out.println("Помилка при створенні APK файлу.");
+        }
+    }
+
+        // Виклик функції компіляції з іншого класу
+
+    private String readFile(String folderName, String fileName) {
+        FileInputStream fis = null;
+        InputStreamReader isr = null;
+        BufferedReader br = null;
+        StringBuilder sb = new StringBuilder();
         try {
-            fos = openFileOutput(fileName, Context.MODE_PRIVATE);
-            fos.write(data.getBytes());
-            Toast.makeText(this, "Data was saved successfully", Toast.LENGTH_SHORT).show();
+            File file = new File(getFilesDir(), "Projects/" + folderName + "/" + folderName + "/" + fileName);
+            System.out.println(file.getAbsolutePath());
+            fis = new FileInputStream(file);
+            // Вказуємо кодування UTF-8 при читанні файлу
+            isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
+            br = new BufferedReader(isr);
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            System.out.println("Text of file: " + sb.toString());
+            editor.setText(sb.toString());
+
         } catch (IOException e) {
             e.printStackTrace();
-            Toast.makeText(this, "Trouble with saving data", Toast.LENGTH_SHORT).show();
         } finally {
-            if (fos != null) {
+            if (br != null) {
                 try {
-                    fos.close();
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (isr != null) {
+                try {
+                    isr.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (fis != null) {
+                try {
+                    fis.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
+        return sb.toString();
     }
-    private void printFileContentToLog(Context context, String fileName) {
-        try {
-            // Отримання AssetManager для доступу до активів
-            AssetManager assetManager = context.getAssets();
-            // Відкриття файлу у вигляді InputStream
-            InputStream inputStream = assetManager.open(fileName);
 
-            // Читання файлу з InputStream
-            InputStreamReader isr = new InputStreamReader(inputStream);
-            BufferedReader br = new BufferedReader(isr);
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line).append("\n");
+
+    private void saveData(String title, String fileName, String data) {
+        // перевіряємо, чи змінився текст
+        if (!data.equals(previousText)) {
+            FileOutputStream fos = null;
+            OutputStreamWriter osw = null;
+            try {
+                // Отримання шляху до папки проєкту
+                File folder = new File(getFilesDir(), "Projects/" + title + "/" + title);
+                if (!folder.exists()) {
+                    folder.mkdirs(); // Створення папки, якщо вона не існує
+                    Log.d("App", "Folder was created");
+                }
+                File file = new File(folder, fileName);
+                System.out.println(file.getAbsolutePath());
+
+                fos = new FileOutputStream(file);
+                // Вказуємо кодування UTF-8 при записі у файл
+                osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+                osw.write(data);
+
+                // Показати Toast на головному потоці
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(Editor.this, "Data was saved successfully", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+
+                // Показати Toast на головному потоці
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(Editor.this, "Trouble with saving data", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } finally {
+                if (osw != null) {
+                    try {
+                        osw.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (fos != null) {
+                    try {
+                        fos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
-            // Виведення змісту файлу в логи
-            editor.setText(sb.toString());
-            // Закриття потоків
-            inputStream.close();
-            isr.close();
-            br.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.e("FileContent", "Error reading file: " + fileName);
+            previousText = data; // зберігаємо новий текст як попередній
         }
-    }
-    private void compileApp() {
-        String projectPath = "Projects/"; // Шлях до завантаженого проєкту
-        String outputPath = "/storage/emulated/0/Download/app.apk"; // Шлях для збереження APK
-
-        // Виклик функції компіляції з іншого класу
-        ProjectCompiler.compileProject(projectPath, outputPath);
     }
 
 }

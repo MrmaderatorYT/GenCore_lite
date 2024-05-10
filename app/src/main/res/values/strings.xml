@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">GenCore lite</string>
+    <string name="new_pr">New</string>
+    <string name="open">Open</string>
+    <string name="load">Load</string>
+    <string name="rename">Rename</string>
+    <string name="delete">Delete</string>
+    <string name="choose_project">Choose project</string>
+    <string name="return_m_a">Return</string>
+    <string name="package_name">Package name (org.example)</string>
+    <string name="version">Version</string>
+    <string name="create">Create</string>
+
 </resources>
