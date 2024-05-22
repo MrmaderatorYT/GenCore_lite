@@ -1,7 +1,9 @@
 package com.ccs.gencorelite.editor;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -15,10 +17,13 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.ccs.gencorelite.R;
-import com.ccs.gencorelite.compiler.ProjectCompiler;
+import com.ccs.gencorelite.compiler.TestCompiler;
 import com.ccs.gencorelite.data.PreferenceConfig;
 
 import java.io.BufferedReader;
@@ -26,6 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +39,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class Editor extends AppCompatActivity {
+
+    private static final int REQUEST_CODE = 123;
+    public static final String SCRIPT_NAME = "build_script.sh";
     private ListView fileList;
     private EditText editor;
     private ImageView compile;
@@ -41,6 +50,7 @@ public class Editor extends AppCompatActivity {
     private String previousText = ""; // зберігаємо попередній текст
 
     //private final Handler handler;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,7 +72,9 @@ public class Editor extends AppCompatActivity {
         editor = findViewById(R.id.editor);
         compile = findViewById(R.id.compile);
 
-
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
+        }
         Timer timer = new Timer();
         TimerTask task = new TimerTask() {
             @Override
@@ -81,9 +93,10 @@ public class Editor extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 try {
-                    compileApp();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    copyScriptToStorage();
+                    runTermuxCommand();
+                } catch (Exception e) {
+                    Log.e("TermuxCommand", "Error copying or running Termux command", e);
                 }
             }
         });
@@ -157,22 +170,27 @@ public class Editor extends AppCompatActivity {
             outputDir.mkdirs(); // Створення директорії, якщо вона не існує
         }
 
-// Шлях до вихідного APK файлу
+        // Шлях до вихідного APK файлу
         String apkFilePath = outputDirPath + "/app.apk";
         File outputFile = new File(apkFilePath);
 
-
         // Компілюємо Java файли в Dalvik bytecode
-        boolean success = ProjectCompiler.compileToDex(compiledFilesDir, outputFile.getAbsolutePath());
+        TestCompiler compiler = new TestCompiler(this);
 
-        if (success) {
-            System.out.println("APK файл успішно створено: " + apkFilePath);
-        } else {
-            System.out.println("Помилка при створенні APK файлу.");
-        }
+        new Thread(() -> {
+            boolean success = compiler.compileApk();
+            runOnUiThread(() -> {
+                if (success) {
+                    Toast.makeText(this, "APK compiled successfully", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "Failed to compile APK", Toast.LENGTH_LONG).show();
+                }
+            });
+        }).start();
+        //boolean success = ProjectCompiler.compileToDex(compiledFilesDir, outputFile.getAbsolutePath(), compiledFilesDir, "");
     }
 
-        // Виклик функції компіляції з іншого класу
+    // Виклик функції компіляції з іншого класу
 
     private String readFile(String folderName, String fileName) {
         FileInputStream fis = null;
@@ -224,6 +242,11 @@ public class Editor extends AppCompatActivity {
 
     private void saveData(String title, String fileName, String data) {
         // перевіряємо, чи змінився текст
+
+        String compiledFilesDir = getFilesDir()+"schema";
+        checkJavaFilesExistence(compiledFilesDir);
+// Тепер викликайте ваш метод compileToDex з вже перевіреною папкою compiledFilesDir
+
         if (!data.equals(previousText)) {
             FileOutputStream fos = null;
             OutputStreamWriter osw = null;
@@ -277,6 +300,111 @@ public class Editor extends AppCompatActivity {
             }
             previousText = data; // зберігаємо новий текст як попередній
         }
+    }
+    public static void checkJavaFilesExistence(String compiledFilesDir) {
+        File directory = new File(compiledFilesDir);
+
+        // Перевірка, чи папка існує
+        if (!directory.exists() || !directory.isDirectory()) {
+            System.err.println("Папка з Java файлами не існує");
+            return;
+        }
+
+        // Отримання списку файлів у папці
+        File[] files = directory.listFiles();
+
+        // Перевірка, чи список файлів не порожній
+        if (files == null || files.length == 0) {
+            System.err.println("У папці з Java файлами немає файлів");
+            return;
+        }
+
+        // Виведення списку файлів
+        System.out.println("Список Java файлів:");
+        for (File file : files) {
+            System.out.println(file.getName());
+        }
+    }
+    private void runTermuxCommand() {
+        try {
+            // Шлях до скопійованого скрипта
+            File scriptFile = new File(getExternalFilesDir(null), SCRIPT_NAME);
+
+            // Додати права на виконання скрипта
+            scriptFile.setExecutable(true);
+
+            // Параметри для скрипта
+            String appName = "MyApp";
+            String packageName = "com.example.myapp";
+            String mainActivity = "MainActivity";
+            String sourceDir = "src";
+            String buildDir = "build";
+            String outputDir = "/storage/emulated/0/Download/GenCoreLite";
+
+            // Команда для виконання скрипта з параметрами
+            String command = String.format(
+                    "sh %s %s %s %s %s %s %s",
+                    scriptFile.getAbsolutePath(), appName, packageName, mainActivity, sourceDir, buildDir, outputDir
+            );
+
+            Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", command});
+
+            // Отримати вивід
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            // Отримати помилки
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            StringBuilder errorOutput = new StringBuilder();
+            while ((line = errorReader.readLine()) != null) {
+                errorOutput.append(line).append("\n");
+            }
+
+            // Дочекатися завершення процесу
+            int exitCode = process.waitFor();
+
+            // Показати вивід та помилки
+            runOnUiThread(() -> {
+                editor.setText("Output:\n" + output.toString() + "\nErrors:\n" + errorOutput.toString());
+                Toast.makeText(this, "Termux command finished with exit code: " + exitCode, Toast.LENGTH_LONG).show();
+            });
+
+        } catch (Exception e) {
+            Log.e("TermuxCommand", "Error running Termux command", e);
+            Toast.makeText(this, "Error running Termux command: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                runTermuxCommand();
+            } else {
+                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    private void copyScriptToStorage() throws Exception {
+        // Copy the script from assets to internal storage
+        InputStream inputStream = getAssets().open(SCRIPT_NAME);
+        File outFile = new File(getExternalFilesDir(null), SCRIPT_NAME);
+        FileOutputStream outputStream = new FileOutputStream(outFile);
+
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = inputStream.read(buffer)) > 0) {
+            outputStream.write(buffer, 0, length);
+        }
+
+        inputStream.close();
+        outputStream.close();
     }
 
 }

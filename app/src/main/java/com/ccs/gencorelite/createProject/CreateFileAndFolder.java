@@ -440,5 +440,40 @@ public class CreateFileAndFolder {
         } catch (IOException e) {
             System.out.println("Помилка під час запису у файл: " + e.getMessage());
         }
+
+        String fileManifest = directoryPath + File.separator + "app" + File.separator + "src" + File.separator + "main" + File.separator + "AndroidManifest.xml";
+
+        // Код, який буде записано у файл
+        String xmlContent = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n" +
+                "    package=\"com.example.myapp\">\n" +
+                "    <application\n" +
+                "        android:allowBackup=\"true\"\n" +
+                "        android:icon=\"@mipmap/ic_launcher\"\n" +
+                "        android:label=\"@string/app_name\"\n" +
+                "        android:roundIcon=\"@mipmap/ic_launcher_round\"\n" +
+                "        android:supportsRtl=\"true\"\n" +
+                "        android:theme=\"@style/AppTheme\">\n" +
+                "        <activity android:name=\".MainActivity\">\n" +
+                "            <intent-filter>\n" +
+                "                <action android:name=\"android.intent.action.MAIN\" />\n" +
+                "                <category android:name=\"android.intent.category.LAUNCHER\" />\n" +
+                "            </intent-filter>\n" +
+                "        </activity>\n" +
+                "    </application>\n" +
+                "</manifest>";
+
+// Тепер ви можете записати цей рядок xmlContent у ваш XML-файл
+
+
+        // Запис коду у файл
+        try {
+            FileWriter writer = new FileWriter(fileManifest);
+            writer.write(xmlContent);
+            writer.close();
+            System.out.println("Код успішно записано у файл " + filePath);
+        } catch (IOException e) {
+            System.out.println("Помилка під час запису у файл: " + e.getMessage());
+        }
     }
     }
