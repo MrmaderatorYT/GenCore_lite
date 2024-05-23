@@ -7,6 +7,7 @@ echo "=== Starting script ==="
 
 pkg update -y
 pkg upgrade -y
+pkg install termux-api
 pkg install -y openjdk-17 dx ecj aapt apksigner termux-api
 
 echo "=== Packages installed ==="
@@ -58,9 +59,17 @@ MANIFEST_CONTENT="
 
 # Створення необхідних директорій
 mkdir -p $SOURCE_DIR/$PACKAGE_NAME
+chmod 777 $SOURCE_DIR/$PACKAGE_NAME
+
 mkdir -p $BUILD_DIR
+chmod 777 $BUILD_DIR
+
 mkdir -p $OUTPUT_DIR
+chmod 777 $OUTPUT_DIR
+
 mkdir -p res/mipmap
+chmod 777 res/mipmap
+
 
 echo "=== Directories created ==="
 
@@ -85,32 +94,31 @@ cat $MANIFEST_FILE
 # Компіляція Java-коду
 find $SOURCE_DIR -name "*.java" > sources.txt
 ecj -d $BUILD_DIR @sources.txt
-if [ $? -ne 0 ];то echo "Помилка компіляції Java файлів"
-    then exit 1
+if [ $? -ne 0 ];then echo "Помилка компіляції Java файлів"
+    exit 1
 fi
 
 # Перетворення класів в DEX файл
 dx --dex --output=$BUILD_DIR/classes.dex $BUILD_DIR
-if [ $? -ne 0 ];то echo "Помилка перетворення класів в DEX файл"
-   then exit 1
+if [ $? -ne 0 ];then echo "Помилка перетворення класів в DEX файл"
+   exit 1
 fi
 
 # Створення APK файлу
-aapt package -f -m -F $OUTPUT_DIR/$APP_NAME.unsigned.apk -M $MANIFEST_FILE -S res -I $PREFIX/share/aapt/android.jar
-if [ $? -ne 0 ];то echo "Помилка створення APK файлу"
-    then exit 1
+aapt package -f -m -F $OUTPUT_DIR/$APP_NAME.apk -M $MANIFEST_FILE -S res -I $PREFIX/share/aapt/android.jar
+if [ $? -ne 0 ];then echo "Помилка створення APK файлу"
+    exit 1
 fi
 
 # Додавання DEX файлу в APK
-aapt add $OUTPUT_DIR/$APP_NAME.unsigned.apk $BUILD_DIR/classes.dex
-if [ $? -ne 0 ];то echo "Помилка додавання DEX файлу в APK"
-    then exit 1
+aapt add $OUTPUT_DIR/$APP_NAME.apk $BUILD_DIR/classes.dex
+if [ $? -ne 0 ];then echo "Помилка додавання DEX файлу в APK"
+    exit 1
 fi
 
 # Підписання APK
-apksigner sign --ks my-release-key.jks --out $OUTPUT_DIR/$APP_NAME.apk $OUTPUT_DIR/$APP_NAME.unsigned.apk
-if [ $? -ne 0 ];то echo "Помилка підписання APK файлу"
-   then exit 1
+if [ $? -ne 0 ];then echo "Помилка підписання APK файлу"
+   exit 1
 fi
 
 # Очищення

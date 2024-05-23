@@ -2,8 +2,10 @@ package com.ccs.gencorelite.editor;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -23,7 +25,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.ccs.gencorelite.R;
-import com.ccs.gencorelite.compiler.TestCompiler;
 import com.ccs.gencorelite.data.PreferenceConfig;
 
 import java.io.BufferedReader;
@@ -33,6 +34,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Timer;
@@ -42,7 +44,10 @@ public class Editor extends AppCompatActivity {
 
     private static final int REQUEST_CODE = 123;
     public static final String SCRIPT_NAME = "build_script.sh";
+    public static final String SCRIPTS_FOLDER_NAME = "scripts";
+    public static final String MAIN_FOLDER_NAME = "GenCoreLite";
     private ListView fileList;
+
     private EditText editor;
     private ImageView compile;
     private boolean isRunning = true;
@@ -50,7 +55,6 @@ public class Editor extends AppCompatActivity {
     private String previousText = ""; // зберігаємо попередній текст
 
     //private final Handler handler;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,16 +92,81 @@ public class Editor extends AppCompatActivity {
         // Запускати завдання кожні 10 секунд (10000 мілісекунд)
         timer.schedule(task, 1, 10000);
 
-
         compile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                try {
-                    copyScriptToStorage();
-                    runTermuxCommand();
-                } catch (Exception e) {
-                    Log.e("TermuxCommand", "Error copying or running Termux command", e);
+                AssetManager assetManager = getAssets();
+                InputStream inputStream = null;
+                File documentsDirectory = new File( "/storage/emulated/0/Documents/GenCoreLite/scripts");
+                if (!documentsDirectory.exists()) {
+                    documentsDirectory.mkdirs(); // Створюємо директорію, якщо вона не існує
                 }
+                File destinationFile = new File(documentsDirectory, "build_script.sh");
+
+                try {
+                    inputStream = assetManager.open("build_script.sh");
+                    copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                String sourceFilePath = "file:///android_asset/build_script.sh";
+
+                PackageManager pm = Editor.this.getPackageManager();
+                Intent intent = pm.getLaunchIntentForPackage("com.termux");
+
+                if (intent != null) {
+
+                    try {
+                        // Відкриття файлу з папки assets
+
+                        // Читання даних з файлу
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                        StringBuilder stringBuilder = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            stringBuilder.append(line).append("\n");
+                        }
+                        reader.close();
+
+                        // Отримання зчитаного вмісту файлу у вигляді рядка
+                        String fileContent = stringBuilder.toString();
+
+                        // Тепер ви можете використати fileContent за потребою
+
+                        // Наприклад, вивести його в лог
+                        Log.d("FileContent", fileContent);
+
+                        // Відправка команди у термінал Termux
+                        try {
+                            Process process = Runtime.getRuntime().exec("sh");
+                            OutputStream outputStream = process.getOutputStream();
+                            outputStream.write(fileContent.getBytes());
+                            outputStream.flush();
+                            outputStream.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        // Додаємо команду для виконання у Termux
+                        intent.putExtra("com.termux.app.execute", "bash /storage/emulated/0/Documents/GenCoreLite/scripts/build_script.sh");
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+                        // Відкриваємо Termux
+                        startActivity(intent);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    // Якщо Termux не знайдено на пристрої
+                    Toast.makeText(Editor.this, "Termux не знайдено на пристрої", Toast.LENGTH_SHORT).show();
+                }
+//                try {
+//                    copyScriptToStorage();
+//                    runTermuxCommand();
+//                } catch (Exception e) {
+//                    Log.e("TermuxCommand", "Error copying or running Termux command", e);
+//                }
             }
         });
 
@@ -122,10 +191,6 @@ public class Editor extends AppCompatActivity {
                 // З цієї точки ви можете реалізувати завантаження тексту файлу та відображення його в полі редактора
                 if (fileName.contains("array.txt")) {
                     readFile(title, "array.txt");
-//                } else if (fileName.equals("AndroidManifest.xml")) {
-//                    printFileContentToLog(Editor.this, "file:///android_assets/manifest/" + fileName);
-//                } else if (fileName.contains(".xml")&&fileName.contains("activity")) {
-//                    readFile("app/layout/" + fileName);
                 }
             }
         });
@@ -154,43 +219,6 @@ public class Editor extends AppCompatActivity {
                 return super.onContextItemSelected(item);
         }
     }
-
-    // Метод для збереження даних в реальному часі
-
-
-    private void compileApp() throws IOException {
-        Context context = Editor.this;
-        // Шлях до папки зі скомпільованими Java файлами
-        String compiledFilesDir = getFilesDir()+"schema";
-
-        // Шлях до вихідної директорії для збереження скомпільованого коду
-        String outputDirPath = "/storage/emulated/0/Download/Schema";
-        File outputDir = new File(outputDirPath);
-        if (!outputDir.exists()) {
-            outputDir.mkdirs(); // Створення директорії, якщо вона не існує
-        }
-
-        // Шлях до вихідного APK файлу
-        String apkFilePath = outputDirPath + "/app.apk";
-        File outputFile = new File(apkFilePath);
-
-        // Компілюємо Java файли в Dalvik bytecode
-        TestCompiler compiler = new TestCompiler(this);
-
-        new Thread(() -> {
-            boolean success = compiler.compileApk();
-            runOnUiThread(() -> {
-                if (success) {
-                    Toast.makeText(this, "APK compiled successfully", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(this, "Failed to compile APK", Toast.LENGTH_LONG).show();
-                }
-            });
-        }).start();
-        //boolean success = ProjectCompiler.compileToDex(compiledFilesDir, outputFile.getAbsolutePath(), compiledFilesDir, "");
-    }
-
-    // Виклик функції компіляції з іншого класу
 
     private String readFile(String folderName, String fileName) {
         FileInputStream fis = null;
@@ -239,13 +267,12 @@ public class Editor extends AppCompatActivity {
         return sb.toString();
     }
 
-
     private void saveData(String title, String fileName, String data) {
         // перевіряємо, чи змінився текст
 
         String compiledFilesDir = getFilesDir()+"schema";
         checkJavaFilesExistence(compiledFilesDir);
-// Тепер викликайте ваш метод compileToDex з вже перевіреною папкою compiledFilesDir
+        // Тепер викликайте ваш метод compileToDex з вже перевіреною папкою compiledFilesDir
 
         if (!data.equals(previousText)) {
             FileOutputStream fos = null;
@@ -301,6 +328,7 @@ public class Editor extends AppCompatActivity {
             previousText = data; // зберігаємо новий текст як попередній
         }
     }
+
     public static void checkJavaFilesExistence(String compiledFilesDir) {
         File directory = new File(compiledFilesDir);
 
@@ -325,6 +353,26 @@ public class Editor extends AppCompatActivity {
             System.out.println(file.getName());
         }
     }
+
+    private void executeTermuxCommand(String command) {
+        try {
+            Intent intent = new Intent("com.termux.api.action.RUN_COMMAND");
+            intent.setPackage("com.termux");
+            intent.putExtra("com.termux.api.extra.COMMAND", command);
+            intent.putExtra("com.termux.api.extra.WORKDIR", "/data/data/com.termux/files/home");
+            intent.putExtra("com.termux.api.extra.CWD", "/data/data/com.termux/files/home");
+            intent.putExtra("com.termux.api.extra.PERSISTENT", false);
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+            } else {
+                Toast.makeText(this, "Termux API is not installed", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e("TermuxCommand", "Error running Termux command", e);
+            Toast.makeText(this, "Error running Termux command: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void runTermuxCommand() {
         try {
             // Шлях до скопійованого скрипта
@@ -347,35 +395,32 @@ public class Editor extends AppCompatActivity {
                     scriptFile.getAbsolutePath(), appName, packageName, mainActivity, sourceDir, buildDir, outputDir
             );
 
-            Process process = Runtime.getRuntime().exec(new String[]{"sh", "-c", command});
-
-            // Отримати вивід
+            // Виконати команду за допомогою ProcessBuilder
+            ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             StringBuilder output = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
                 output.append(line).append("\n");
             }
-
-            // Отримати помилки
-            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            StringBuilder errorOutput = new StringBuilder();
-            while ((line = errorReader.readLine()) != null) {
-                errorOutput.append(line).append("\n");
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                // Команда виконана успішно
+                String successMessage = "Command executed successfully:\n" + output.toString();
+                Log.d("CommandExecution", successMessage);
+                editor.setText(successMessage);
+            } else {
+                // Команда завершилася з помилкою
+                String errorMessage = "Command execution failed with exit code " + exitCode + ":\n" + output.toString();
+                Log.e("CommandExecution", errorMessage);
+                editor.setText(errorMessage);
             }
 
-            // Дочекатися завершення процесу
-            int exitCode = process.waitFor();
-
-            // Показати вивід та помилки
-            runOnUiThread(() -> {
-                editor.setText("Output:\n" + output.toString() + "\nErrors:\n" + errorOutput.toString());
-                Toast.makeText(this, "Termux command finished with exit code: " + exitCode, Toast.LENGTH_LONG).show();
-            });
-
         } catch (Exception e) {
-            Log.e("TermuxCommand", "Error running Termux command", e);
-            Toast.makeText(this, "Error running Termux command: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Log.e("CommandExecution", "Error running command", e);
+            Toast.makeText(this, "Error running command: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -391,20 +436,49 @@ public class Editor extends AppCompatActivity {
             }
         }
     }
-    private void copyScriptToStorage() throws Exception {
-        // Copy the script from assets to internal storage
-        InputStream inputStream = getAssets().open(SCRIPT_NAME);
-        File outFile = new File(getExternalFilesDir(null), SCRIPT_NAME);
-        FileOutputStream outputStream = new FileOutputStream(outFile);
 
-        byte[] buffer = new byte[1024];
-        int length;
-        while ((length = inputStream.read(buffer)) > 0) {
-            outputStream.write(buffer, 0, length);
+
+    public static File createMainFolder(Context context) {
+        File mainFolder = new File("/storage/emulated/0/Documents", MAIN_FOLDER_NAME);
+        if (!mainFolder.exists()) {
+            if (mainFolder.mkdirs()) {
+                Log.d("FileHelper", "Main folder created: " + mainFolder.getAbsolutePath());
+            } else {
+                Log.e("FileHelper", "Failed to create main folder");
+            }
         }
-
-        inputStream.close();
-        outputStream.close();
+        return mainFolder;
     }
 
+    public static File createScriptsFolder(Context context) {
+        File mainFolder = createMainFolder(context);
+        File scriptsFolder = new File(mainFolder, SCRIPTS_FOLDER_NAME);
+        if (!scriptsFolder.exists()) {
+            if (scriptsFolder.mkdirs()) {
+                Log.d("FileHelper", "Scripts folder created: " + scriptsFolder.getAbsolutePath());
+            } else {
+                Log.e("FileHelper", "Failed to create scripts folder");
+            }
+        }
+        return scriptsFolder;
+    }
+    public static void copyFileFromAssets(Context context, String assetFilePath, File destinationFile) {
+        AssetManager assetManager = context.getAssets();
+        try {
+            InputStream inputStream = assetManager.open(assetFilePath);
+            OutputStream outputStream = new FileOutputStream(destinationFile);
+
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+
+            inputStream.close();
+            outputStream.close();
+            Log.d("FileHelper", "File copied from assets to: " + destinationFile.getAbsolutePath());
+        } catch (IOException e) {
+            Log.e("FileHelper", "Error copying file from assets: " + assetFilePath, e);
+        }
+    }
 }
