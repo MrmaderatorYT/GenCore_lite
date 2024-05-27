@@ -102,7 +102,10 @@ public class Editor extends AppCompatActivity {
                     documentsDirectory.mkdirs(); // Створюємо директорію, якщо вона не існує
                 }
                 File destinationFile = new File(documentsDirectory, "build_script.sh");
+                destinationFile.setExecutable(true);
 
+                // Launch Termux with the script
+                launchTermuxScript(destinationFile.getAbsolutePath());
                 try {
                     inputStream = assetManager.open("build_script.sh");
                     copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
@@ -147,13 +150,6 @@ public class Editor extends AppCompatActivity {
                             e.printStackTrace();
                         }
 
-                        // Додаємо команду для виконання у Termux
-                        intent.putExtra("com.termux.app.execute", "bash /storage/emulated/0/Documents/GenCoreLite/scripts/build_script.sh");
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-                        // Відкриваємо Termux
-                        startActivity(intent);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -354,24 +350,37 @@ public class Editor extends AppCompatActivity {
         }
     }
 
-    private void executeTermuxCommand(String command) {
+    private void executeTermuxCommand() {
         try {
-            Intent intent = new Intent("com.termux.api.action.RUN_COMMAND");
+            Intent intent = new Intent("com.termux.RUN_COMMAND");
             intent.setPackage("com.termux");
-            intent.putExtra("com.termux.api.extra.COMMAND", command);
-            intent.putExtra("com.termux.api.extra.WORKDIR", "/data/data/com.termux/files/home");
-            intent.putExtra("com.termux.api.extra.CWD", "/data/data/com.termux/files/home");
-            intent.putExtra("com.termux.api.extra.PERSISTENT", false);
-            if (intent.resolveActivity(getPackageManager()) != null) {
-                startActivity(intent);
-            } else {
-                Toast.makeText(this, "Termux API is not installed", Toast.LENGTH_SHORT).show();
-            }
+            intent.putExtra("com.termux.RUN_COMMAND_PATH", "/storage/emulated/0/Documents/GenCoreLite/scripts/build_script.sh");
+            intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", false);
+            startActivity(intent);
         } catch (Exception e) {
             Log.e("TermuxCommand", "Error running Termux command", e);
             Toast.makeText(this, "Error running Termux command: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
+
+    private void launchTermuxScript(String scriptPath) {
+        PackageManager pm = getPackageManager();
+        Intent intent = pm.getLaunchIntentForPackage("com.termux");
+
+        if (intent != null) {
+            // Add the command to execute in Termux
+            intent.putExtra("com.termux.RUN_COMMAND", "bash " + scriptPath);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+            // Launch Termux
+            startActivity(intent);
+        } else {
+            // Handle the error
+            // Termux is not installed
+        }
+    }
+
 
     private void runTermuxCommand() {
         try {

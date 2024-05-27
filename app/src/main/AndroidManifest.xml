@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
+
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -21,6 +22,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GenCoreLite"
         tools:targetApi="31">
+
         <activity
             android:name=".editor.Editor"
             android:exported="false" />
@@ -34,8 +36,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name=".RunCommandService" />
+
     </application>
     <queries>
         <package android:name="com.termux" />
+        <package android:name="com.termux.app" />
+        <package android:name="com.termux.api"/>
     </queries>
 </manifest>
