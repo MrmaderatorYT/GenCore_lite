@@ -26,6 +26,7 @@ android {
         }
         applicationId "com.ccs.gencorelite"
         minSdk 26
+        //noinspection ExpiredTargetSdkVersion
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -58,24 +59,8 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    //implementation 'org.eclipse.jdt.core.compiler:ecj:4.6.1'
-    implementation('com.zeoflow:jx:1.2.1') {
-        exclude group: 'jakarta.activation', module: 'jakarta.activation-api'
-    }
-    implementation('com.android.tools.build:builder:8.4.0') {
-        exclude group: 'com.sun.activation', module: 'javax.activation'
-    }
-    implementation('org.eclipse.jdt:ecj:3.21.0') {
-        exclude group: 'org.eclipse.jdt.core.compiler', module: 'ecj-3.21.0'
-    }
-    implementation "com.termux:termux-shared:0.118.0"
 
 
-}
-configurations.all {
-    resolutionStrategy {
-        force 'jakarta.activation:jakarta.activation-api:1.2.1'
-        // або
-        // force 'com.sun.activation:javax.activation:1.2.0'
-    }
+
+
 }

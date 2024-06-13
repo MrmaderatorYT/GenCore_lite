@@ -105,7 +105,7 @@ public class Editor extends AppCompatActivity {
                 destinationFile.setExecutable(true);
 
                 // Launch Termux with the script
-                launchTermuxScript(destinationFile.getAbsolutePath());
+                launchTermuxScript();
                 try {
                     inputStream = assetManager.open("build_script.sh");
                     copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
@@ -363,22 +363,33 @@ public class Editor extends AppCompatActivity {
         }
     }
 
-    private void launchTermuxScript(String scriptPath) {
+    private void launchTermuxScript() {
         PackageManager pm = getPackageManager();
-        Intent intent = pm.getLaunchIntentForPackage("com.termux");
+        Intent intent = new Intent();
+        intent = pm.getLaunchIntentForPackage("com.termux");
+        startActivity(intent);
+        intent.setClassName("com.termux", "com.termux.app.RunCommandService");
+        intent.setAction("com.termux.RUN_COMMAND");
+        intent.putExtra("com.termux.RUN_COMMAND_PATH", "bash /storage/emulated/0/Documents/GenCoreLite/scripts/build_script.sh");
+        intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS", new String[]{"-n", "5"});
+        intent.putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home");
+        intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", false);
+        intent.putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0");
+        startService(intent);
 
-        if (intent != null) {
-            // Add the command to execute in Termux
-            intent.putExtra("com.termux.RUN_COMMAND", "bash " + scriptPath);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-            // Launch Termux
-            startActivity(intent);
-        } else {
-            // Handle the error
-            // Termux is not installed
-        }
+//        if (intent != null) {
+//            // Add the command to execute in Termux
+//            intent.putExtra("com.termux.RUN_COMMAND", "bash " + scriptPath);
+//            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//
+//            // Launch Termux
+//            startActivity(intent);
+//        } else {
+//            // Handle the error
+//            // Termux is not installed
+//        }
     }
 
 
@@ -393,10 +404,18 @@ public class Editor extends AppCompatActivity {
             // Параметри для скрипта
             String appName = "MyApp";
             String packageName = "com.example.myapp";
-            String mainActivity = "MainActivity";
+            String mainActivity = "package org.example.myapp;\n" +
+                    "public class MainActivity extended AppCompatActivity{\n" +
+                    "@Override\n" +
+                    "protected void onCreate(Bundle savedInstanceState) {\n" +
+                    "super.onCreate(savedInstanceState);\n" +
+                    "setContentView(R.layout.activity_editor);\n" +
+                    "}\n" +
+                    "}";
             String sourceDir = "src";
             String buildDir = "build";
             String outputDir = "/storage/emulated/0/Download/GenCoreLite";
+
 
             // Команда для виконання скрипта з параметрами
             String command = String.format(
