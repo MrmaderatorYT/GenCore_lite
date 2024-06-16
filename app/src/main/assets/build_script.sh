@@ -73,15 +73,11 @@ MANIFEST_CONTENT="
 "
 
 THEME_CONTENT="
-<resources xmlns:tools=\"http://schemas.android.com/tools\">
-    <style name=\"Theme.MyApp\" parent=\"Theme.MaterialComponents.DayNight.NoActionBar\">
-        <item name=\"colorPrimary\">@color/myapp_purple_500</item>
-        <item name=\"colorPrimaryVariant\">@color/myapp_purple_700</item>
-        <item name=\"colorOnPrimary\">@color/myapp_white</item>
-        <item name=\"colorSecondary\">@color/myapp_teal_200</item>
-        <item name=\"colorSecondaryVariant\">@color/myapp_teal_700</item>
-        <item name=\"colorOnSecondary\">@color/myapp_black</item>
-        <item name=\"android:statusBarColor\">?attr/colorPrimaryVariant</item>
+<resources>
+    <style name=\"Theme.MyApp\" parent=\"android:Theme.Material\">
+        <item name=\"android:colorPrimary\">@android:color/holo_blue_bright</item>
+        <item name=\"android:colorPrimaryDark\">@android:color/holo_blue_dark</item>
+        <item name=\"android:colorAccent\">@android:color/holo_blue_light</item>
     </style>
 </resources>
 "
@@ -176,24 +172,22 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "=== Створення APK файлу ==="
-aapt2 compile -o --auto-add-overlay $BUILD_DIR/res.zip $RES_DIR/mipmap/ic_launcher.xml $RES_DIR/mipmap/ic_launcher_round.xml $RES_DIR/values/colors.xml $RES_DIR/values/themes.xml
-if [ $? -ne 0 ]; then
+echo "=== Створення .flat файлів ресурсів ==="
+aapt2 compile --dir $RES_DIR -o $BUILD_DIR/res.zip
+if [ $? -ne 0 ];then
     echo "Помилка компіляції ресурсів"
     exit 1
 fi
 
-chmod +r /storage/emulated/0/Documents/GenCoreLite/scripts/build/res.zip
-aapt2 link -o $OUTPUT_DIR/$APP_NAME.apk -I $PREFIX/share/aapt/android.jar --manifest $MANIFEST_FILE --proto-format -R $RES_DIR/mipmap/ic_launcher.xml -R $RES_DIR/mipmap/ic_launcher_round.xml -R $RES_DIR/values/colors.xml -R $RES_DIR/values/themes.xml --java $BUILD_DIR
-
+echo "=== Лінкування ресурсів та створення APK файлу ==="
+aapt2 link -o $OUTPUT_DIR/$APP_NAME.apk -I $PREFIX/share/aapt/android.jar --manifest $MANIFEST_FILE -R $BUILD_DIR/res.zip --auto-add-overlay
 if [ $? -ne 0 ]; then
     echo "Помилка створення APK файлу"
     exit 1
 fi
 
-
 echo "=== Додавання Dex файлу в APK ==="
-aapt add --auto-add-overlay $OUTPUT_DIR/$APP_NAME.apk $BUILD_DIR/classes.dex
+aapt add $OUTPUT_DIR/$APP_NAME.apk $BUILD_DIR/classes.dex
 if [ $? -ne 0 ]; then
     echo "Помилка додавання DEX файлу в APK"
     exit 1
