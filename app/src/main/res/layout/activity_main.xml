@@ -96,17 +96,16 @@
         android:layout_marginVertical="20sp"
 
         android:id="@+id/return_text"/>
+
     <TextView
+        android:id="@+id/version"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:id="@+id/version"
-        android:text="0.1"
         android:layout_above="@id/title"
-        android:layout_alignRight="@+id/logo_not_main"/>
-
-
-
+        android:layout_centerInParent="true"
+        android:layout_alignLeft="@+id/logo"
+        android:text="0.1"
+        android:textSize="20sp" />
 
 
 </RelativeLayout>

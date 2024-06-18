@@ -12,10 +12,13 @@ echo "=== Install required packages ==="
 pkg install -y openjdk-17 dx ecj aapt2 termux-api wget
 
 echo "=== Download lib++ file ==="
-chmod 777 /storage/emulated/0/Download/
-wget -P /storage/emulated/0/Documents/GenCoreLite/scripts https://packages-cf.termux.dev/apt/termux-main/pool/main/libc/libc%2B%2B/libc%2B%2B_26b_aarch64.deb
-
-dpkg -i /storage/emulated/0/Documents/GenCoreLite/scripts/libc++_26b_aarch64.deb
+if [ -f "/storage/emulated/0/Documents/GenCoreLite/scripts/libc++_26b_aarch64.deb" ]; then
+  echo "файл lib++26b_aarch64.deb присутній"
+else
+  chmod 777 /storage/emulated/0/Download/
+  wget -P /storage/emulated/0/Documents/GenCoreLite/scripts https://packages-cf.termux.dev/apt/termux-main/pool/main/libc/libc%2B%2B/libc%2B%2B_26b_aarch64.deb
+  dpkg -i /storage/emulated/0/Documents/GenCoreLite/scripts/libc++_26b_aarch64.deb
+fi
 
 echo "=== Update packages again ==="
 pkg update -y
@@ -30,7 +33,8 @@ BUILD_DIR="/storage/emulated/0/Documents/GenCoreLite/scripts/build"
 OUTPUT_DIR="/storage/emulated/0/Documents/GenCoreLite/scripts/output"
 RES_DIR="/storage/emulated/0/Documents/GenCoreLite/scripts/res"
 MANIFEST_FILE="/storage/emulated/0/Documents/GenCoreLite/scripts/AndroidManifest.xml"
-
+MIN_SDK_VERSION="21" # Мінімальна версія SDK
+TARGET_SDK_VERSION="30" # Цільова версія SDK
 MAIN_ACTIVITY_CODE="
 package $PACKAGE_NAME;
 
@@ -55,6 +59,7 @@ THEME="@style/Theme.MyApp"
 MANIFEST_CONTENT="
 <manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"
     package=\"$PACKAGE_NAME\">
+    <uses-sdk android:minSdkVersion=\"$MIN_SDK_VERSION\" android:targetSdkVersion=\"$TARGET_SDK_VERSION\" />
     <application
         android:allowBackup=\"true\"
         android:icon=\"$IC_LAUNCHER\"
@@ -178,22 +183,53 @@ if [ $? -ne 0 ];then
     echo "Помилка компіляції ресурсів"
     exit 1
 fi
-
 echo "=== Лінкування ресурсів та створення APK файлу ==="
-aapt2 link -o $OUTPUT_DIR/$APP_NAME.apk -I $PREFIX/share/aapt/android.jar --manifest $MANIFEST_FILE -R $BUILD_DIR/res.zip --auto-add-overlay
-if [ $? -ne 0 ]; then
+aapt2 link -o $OUTPUT_DIR/$APP_NAME-unsigned.apk -I $PREFIX/share/aapt/android.jar --manifest $MANIFEST_FILE -R $BUILD_DIR/res.zip --min-sdk-version $MIN_SDK_VERSION --target-sdk-version $TARGET_SDK_VERSION --auto-add-overlay
+if [ $? -ne 0 ];then
     echo "Помилка створення APK файлу"
     exit 1
 fi
 
 echo "=== Додавання Dex файлу в APK ==="
-aapt add $OUTPUT_DIR/$APP_NAME.apk $BUILD_DIR/classes.dex
-if [ $? -ne 0 ]; then
+aapt add $OUTPUT_DIR/$APP_NAME-unsigned.apk $BUILD_DIR/classes.dex
+if [ $? -ne 0 ];then
     echo "Помилка додавання DEX файлу в APK"
+    exit 1
+fi
+
+# Перевірка, чи вже існує підписаний APK файл
+SIGNED_APK="$OUTPUT_DIR/$APP_NAME.apk"
+if [ -f $SIGNED_APK ]; then
+    echo "Видалення старого підписаного APK файла"
+    rm $SIGNED_APK
+fi
+
+# Підписання APK файлу
+echo "=== Генерація ключа для підписання APK ==="
+keytool -genkey -v -keystore $OUTPUT_DIR/my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=MyName, OU=MyOrg, O=MyCompany, L=MyCity, S=MyState, C=MyCountry"
+if [ $? -ne 0 ];then
+    echo "Помилка генерації ключа для підписання APK"
+    exit 1
+fi
+
+echo "=== Підписання APK файлу ==="
+apksigner sign --ks $OUTPUT_DIR/my-release-key.keystore --ks-key-alias my-key-alias --ks-pass pass:password --key-pass pass:password --out $SIGNED_APK $OUTPUT_DIR/$APP_NAME-unsigned.apk
+if [ $? -ne 0 ];then
+    echo "Помилка підписання APK файлу"
     exit 1
 fi
 
 # Очищення
 rm -rf $BUILD_DIR
+rm $OUTPUT_DIR/$APP_NAME-unsigned.apk
 
-echo "APK створено: $OUTPUT_DIR/$APP_NAME.apk"
+echo "APK створено та підписано: $SIGNED_APK"
+
+echo "=== Перевірка APK на помилки ==="
+apksigner verify $SIGNED_APK
+if [ $? -ne 0 ];then
+    echo "APK файл має помилки"
+    exit 1
+fi
+
+echo "=== APK файл успішно створено та перевірено ==="

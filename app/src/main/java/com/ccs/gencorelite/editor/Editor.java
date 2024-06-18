@@ -84,7 +84,8 @@ public class Editor extends AppCompatActivity {
             @Override
             public void run() {
                 // Викликати ваш метод кожні 10 секунд
-                saveData(title,"array.txt", editor.getText().toString());
+                saveData(title,"messages.gc_l", editor.getText().toString());
+                saveData(title,"colors.gc_l", editor.getText().toString());
                 System.out.println("Text of saved file: "+ editor.getText().toString());
             }
         };
@@ -167,7 +168,7 @@ public class Editor extends AppCompatActivity {
         });
 
         // Масив з назвами файлів (припустимо, що це ваш список файлів)
-        String[] files = {"array.txt"};
+        String[] files = {"messages.gc_l", "colors.gc_l"};
 
         // Адаптер для списку файлів
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
@@ -185,8 +186,10 @@ public class Editor extends AppCompatActivity {
                 String fileName = fileList.getItemAtPosition(position).toString();
                 // Можна використовувати це ім'я файлу для завантаження тексту файлу та відображення його в редакторі
                 // З цієї точки ви можете реалізувати завантаження тексту файлу та відображення його в полі редактора
-                if (fileName.contains("array.txt")) {
-                    readFile(title, "array.txt");
+                if (fileName.contains("messages.gc_l")) {
+                    readFile(title, "messages.gc_l");
+                }else if(fileName.contains("colors.gc_l")){
+                    readFile(title, "colors.gc_l");
                 }
             }
         });
