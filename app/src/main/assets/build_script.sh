@@ -9,7 +9,12 @@ pkg update -y
 pkg upgrade -y
 
 echo "=== Install required packages ==="
-pkg install -y openjdk-17 dx ecj aapt2 termux-api wget
+pkg install -y openjdk-17 ecj aapt2 termux-api wget
+
+# Встановлення d8 замість dx
+if ! command -v d8 &> /dev/null; then
+  pkg install -y d8
+fi
 
 echo "=== Download lib++ file ==="
 if [ -f "/storage/emulated/0/Documents/GenCoreLite/scripts/libc++_26b_aarch64.deb" ]; then
@@ -124,8 +129,8 @@ IC_LAUNCHER_ROUND_XML="<?xml version=\"1.0\" encoding=\"utf-8\"?>
 echo "=== Directories and files setup ==="
 
 # Створення необхідних директорій
-mkdir -p $SOURCE_DIR/$PACKAGE_NAME
-chmod 777 $SOURCE_DIR/$PACKAGE_NAME
+mkdir -p $SOURCE_DIR/$(echo $PACKAGE_NAME | tr '.' '/')
+chmod 777 $SOURCE_DIR/$(echo $PACKAGE_NAME | tr '.' '/')
 
 mkdir -p $BUILD_DIR
 chmod 777 $BUILD_DIR
@@ -142,7 +147,7 @@ chmod 777 $RES_DIR/values
 echo "=== Directories created ==="
 
 # Створення основного Java файлу
-echo "$MAIN_ACTIVITY_CODE" > $SOURCE_DIR/$PACKAGE_NAME/$MAIN_ACTIVITY.java
+echo "$MAIN_ACTIVITY_CODE" > $SOURCE_DIR/$(echo $PACKAGE_NAME | tr '.' '/')/$MAIN_ACTIVITY.java
 
 # Створення AndroidManifest.xml
 echo "$MANIFEST_CONTENT" > $MANIFEST_FILE
@@ -164,72 +169,90 @@ ls -R $RES_DIR
 cat $MANIFEST_FILE
 
 echo "=== Компліяція Java файлів ==="
-ecj -d $BUILD_DIR $SOURCE_DIR/$PACKAGE_NAME/$MAIN_ACTIVITY.java
+ecj -d $BUILD_DIR $SOURCE_DIR/$(echo $PACKAGE_NAME | tr '.' '/')/$MAIN_ACTIVITY.java
 if [ $? -ne 0 ]; then
     echo "Помилка компіляції Java файлів"
     exit 1
 fi
 
 echo "=== Перетворення класів в DEX файл ==="
-dx --dex --output=$BUILD_DIR/classes.dex $BUILD_DIR
+d8 $BUILD_DIR/$(echo $PACKAGE_NAME | tr '.' '/')/*.class --output $BUILD_DIR
 if [ $? -ne 0 ]; then
     echo "Помилка перетворення класів в DEX файл"
     exit 1
 fi
 
+# Переконатися, що classes.dex створений
+if [ ! -f "$BUILD_DIR/classes.dex" ]; then
+    echo "Помилка: classes.dex не створено"
+    exit 1
+fi
+
 echo "=== Створення .flat файлів ресурсів ==="
 aapt2 compile --dir $RES_DIR -o $BUILD_DIR/res.zip
-if [ $? -ne 0 ];then
+if [ $? -ne 0 ]; then
     echo "Помилка компіляції ресурсів"
     exit 1
 fi
+
 echo "=== Лінкування ресурсів та створення APK файлу ==="
 aapt2 link -o $OUTPUT_DIR/$APP_NAME-unsigned.apk -I $PREFIX/share/aapt/android.jar --manifest $MANIFEST_FILE -R $BUILD_DIR/res.zip --min-sdk-version $MIN_SDK_VERSION --target-sdk-version $TARGET_SDK_VERSION --auto-add-overlay
-if [ $? -ne 0 ];then
+if [ $? -ne 0 ]; then
     echo "Помилка створення APK файлу"
     exit 1
 fi
 
-echo "=== Додавання Dex файлу в APK ==="
-aapt add $OUTPUT_DIR/$APP_NAME-unsigned.apk $BUILD_DIR/classes.dex
-if [ $? -ne 0 ];then
-    echo "Помилка додавання DEX файлу в APK"
+echo "=== Перевірка наявності APK та DEX файлів ==="
+ls -l $OUTPUT_DIR
+ls -l $BUILD_DIR
+
+echo "=== Додавання DEX файлу в APK ==="
+cd $BUILD_DIR
+if [ -f "$OUTPUT_DIR/$APP_NAME-unsigned.apk" ]; then
+    echo "=== Додавання нового DEX файла до APK ==="
+    zip -j $OUTPUT_DIR/$APP_NAME-unsigned.apk "$BUILD_DIR/classes.dex"
+    if [ $? -ne 0 ]; then
+        echo "Помилка додавання DEX файла в APK"
+        exit 1
+    fi
+else
+    echo "Помилка: APK файл не знайдено"
     exit 1
 fi
 
-# Перевірка, чи вже існує підписаний APK файл
+# Підписання APK файла
 SIGNED_APK="$OUTPUT_DIR/$APP_NAME.apk"
 if [ -f $SIGNED_APK ]; then
     echo "Видалення старого підписаного APK файла"
     rm $SIGNED_APK
 fi
 
-# Підписання APK файлу
-echo "=== Генерація ключа для підписання APK ==="
-keytool -genkey -v -keystore $OUTPUT_DIR/my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=MyName, OU=MyOrg, O=MyCompany, L=MyCity, S=MyState, C=MyCountry"
-if [ $? -ne 0 ];then
-    echo "Помилка генерації ключа для підписання APK"
-    exit 1
+# Генерація ключа для підписання APK
+KEYSTORE="$OUTPUT_DIR/my-release-key.jks"
+KEY_ALIAS="my-key-alias"
+KEYSTORE_PASSWORD="password"
+KEY_PASSWORD="password"
+
+if [ ! -f $KEYSTORE ]; then
+    echo "=== Генерація ключа для підписання APK ==="
+    keytool -genkey -v -keystore $KEYSTORE -keyalg RSA -keysize 2048 -validity 10000 -alias $KEY_ALIAS -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD -dname "CN=MyApp, OU=MyApp, O=MyApp, L=MyApp, S=MyApp, C=US"
 fi
 
 echo "=== Підписання APK файлу ==="
-apksigner sign --ks $OUTPUT_DIR/my-release-key.keystore --ks-key-alias my-key-alias --ks-pass pass:password --key-pass pass:password --out $SIGNED_APK $OUTPUT_DIR/$APP_NAME-unsigned.apk
-if [ $? -ne 0 ];then
+jarsigner -keystore $KEYSTORE -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD -signedjar $SIGNED_APK $OUTPUT_DIR/$APP_NAME-unsigned.apk $KEY_ALIAS
+if [ $? -ne 0 ]; then
     echo "Помилка підписання APK файлу"
     exit 1
 fi
 
-# Очищення
-rm -rf $BUILD_DIR
-rm $OUTPUT_DIR/$APP_NAME-unsigned.apk
+rm -rf $OUTPUT_DIR/$APP_NAME-aligned.apk
 
-echo "APK створено та підписано: $SIGNED_APK"
-
-echo "=== Перевірка APK на помилки ==="
-apksigner verify $SIGNED_APK
-if [ $? -ne 0 ];then
-    echo "APK файл має помилки"
+# Вирівнювання APK файлу
+echo "=== Вирівнювання APK файлу ==="
+zipalign -v 4 $SIGNED_APK $OUTPUT_DIR/$APP_NAME-aligned.apk
+if [ $? -ne 0 ]; then
+    echo "Помилка вирівнювання APK файлу"
     exit 1
 fi
 
-echo "=== APK файл успішно створено та перевірено ==="
+echo "=== APK файл готовий: $OUTPUT_DIR/$APP_NAME-aligned.apk ==="
