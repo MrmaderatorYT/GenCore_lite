@@ -103,13 +103,21 @@ public class Editor extends AppCompatActivity {
                     documentsDirectory.mkdirs(); // Створюємо директорію, якщо вона не існує
                 }
                 File destinationFile = new File(documentsDirectory, "build_script.sh");
-                destinationFile.setExecutable(true);
+
+                final boolean b = destinationFile.setExecutable(true);
 
                 // Launch Termux with the script
                 launchTermuxScript();
                 try {
                     inputStream = assetManager.open("build_script.sh");
                     copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
+                    copyFileFromAssets(Editor.this, "game.kv", destinationFile);
+                    copyFileFromAssets(Editor.this, "main.kv", destinationFile);
+                    copyFileFromAssets(Editor.this, "info.kv", destinationFile);
+                    copyFileFromAssets(Editor.this, "settings.kv", destinationFile);
+                    copyFileFromAssets(Editor.this, "main.py", destinationFile);
+                    copyFileFromAssets(Editor.this, "dialogues.json", destinationFile);
+                    copyFileFromAssets(Editor.this, "buildozer.spec", destinationFile);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

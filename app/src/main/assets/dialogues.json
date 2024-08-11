@@ -1,0 +1,14 @@
+{
+    "0": {
+        "name": "Character 1",
+        "text": "Hello, how are you?",
+        "image": "./image/kitchen.png",
+        "audio": "./raw/versus.wav"
+    },
+    "1": {
+        "name": "Character 2",
+        "text": "I'm fine, thank you!",
+        "image": "path/to/image2.png",
+        "audio": "./raw/school.wav"
+    }
+}
