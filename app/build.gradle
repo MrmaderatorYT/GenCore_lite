@@ -28,8 +28,7 @@ android {
             javaMaxHeapSize "4g"
         }
         ndk {
-            // On Apple silicon, you can omit x86_64.
-            abiFilters "arm64-v8a", "x86_64"
+                abiFilters "arm64-v8a", "x86_64", "armeabi-v7a", "arm64-v8a"//версії архітектур, які можуть встановити програму
         }
         applicationId "com.ccs.gencorelite"
         minSdk 26

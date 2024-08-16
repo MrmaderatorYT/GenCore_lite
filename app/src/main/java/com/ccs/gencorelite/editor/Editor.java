@@ -1,12 +1,16 @@
 package com.ccs.gencorelite.editor;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.MenuItem;
@@ -20,6 +24,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -43,13 +48,14 @@ import java.util.TimerTask;
 public class Editor extends AppCompatActivity {
 
     private static final int REQUEST_CODE = 123;
+    private static final int PICK_FILE_REQUEST_CODE = 456;
     public static final String SCRIPT_NAME = "build_script.sh";
     public static final String SCRIPTS_FOLDER_NAME = "scripts";
     public static final String MAIN_FOLDER_NAME = "GenCoreLite";
     private ListView fileList;
 
     private EditText editor;
-    private ImageView compile;
+    private ImageView compile, add_file;
     private boolean isRunning = true;
     private String title;
     private String previousText = ""; // зберігаємо попередній текст
@@ -75,6 +81,7 @@ public class Editor extends AppCompatActivity {
         fileList = findViewById(R.id.fileList);
         editor = findViewById(R.id.editor);
         compile = findViewById(R.id.compile);
+        add_file = findViewById(R.id.add_new_file);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
@@ -84,9 +91,9 @@ public class Editor extends AppCompatActivity {
             @Override
             public void run() {
                 // Викликати ваш метод кожні 10 секунд
-                saveData(title,"messages.gc_l", editor.getText().toString());
-                saveData(title,"colors.gc_l", editor.getText().toString());
-                System.out.println("Text of saved file: "+ editor.getText().toString());
+                saveData(title, "messages.gc_l", editor.getText().toString());
+                saveData(title, "colors.gc_l", editor.getText().toString());
+                System.out.println("Text of saved file: " + editor.getText().toString());
             }
         };
 
@@ -98,11 +105,18 @@ public class Editor extends AppCompatActivity {
             public void onClick(View view) {
                 AssetManager assetManager = getAssets();
                 InputStream inputStream = null;
-                File documentsDirectory = new File( "/storage/emulated/0/Documents/GenCoreLite/scripts");
+                File documentsDirectory = new File("/storage/emulated/0/Documents/GenCoreLite/scripts");
                 if (!documentsDirectory.exists()) {
                     documentsDirectory.mkdirs(); // Створюємо директорію, якщо вона не існує
                 }
                 File destinationFile = new File(documentsDirectory, "build_script.sh");
+                File destinationFile1 = new File(documentsDirectory, "game.kv");
+                File destinationFile2 = new File(documentsDirectory, "main.kv");
+                File destinationFile3 = new File(documentsDirectory, "info.kv");
+                File destinationFile4 = new File(documentsDirectory, "settings.kv");
+                File destinationFile5 = new File(documentsDirectory, "main.py");
+                File destinationFile6 = new File(documentsDirectory, "dialogues.json");
+                File destinationFile7 = new File(documentsDirectory, "buildozer.spec");
 
                 final boolean b = destinationFile.setExecutable(true);
 
@@ -111,13 +125,13 @@ public class Editor extends AppCompatActivity {
                 try {
                     inputStream = assetManager.open("build_script.sh");
                     copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
-                    copyFileFromAssets(Editor.this, "game.kv", destinationFile);
-                    copyFileFromAssets(Editor.this, "main.kv", destinationFile);
-                    copyFileFromAssets(Editor.this, "info.kv", destinationFile);
-                    copyFileFromAssets(Editor.this, "settings.kv", destinationFile);
-                    copyFileFromAssets(Editor.this, "main.py", destinationFile);
-                    copyFileFromAssets(Editor.this, "dialogues.json", destinationFile);
-                    copyFileFromAssets(Editor.this, "buildozer.spec", destinationFile);
+                    copyFileFromAssets(Editor.this, "game.kv", destinationFile1);
+                    copyFileFromAssets(Editor.this, "main.kv", destinationFile2);
+                    copyFileFromAssets(Editor.this, "info.kv", destinationFile3);
+                    copyFileFromAssets(Editor.this, "settings.kv", destinationFile4);
+                    copyFileFromAssets(Editor.this, "main.py", destinationFile5);
+                    copyFileFromAssets(Editor.this, "dialogues.json", destinationFile6);
+                    copyFileFromAssets(Editor.this, "buildozer.spec", destinationFile7);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -196,12 +210,20 @@ public class Editor extends AppCompatActivity {
                 // З цієї точки ви можете реалізувати завантаження тексту файлу та відображення його в полі редактора
                 if (fileName.contains("messages.gc_l")) {
                     readFile(title, "messages.gc_l");
-                }else if(fileName.contains("colors.gc_l")){
+                } else if (fileName.contains("colors.gc_l")) {
                     readFile(title, "colors.gc_l");
                 }
             }
         });
+
+        add_file.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openFilePicker();
+            }
+        });
     }
+
 
     // Метод для створення контекстного меню
     @Override
@@ -277,7 +299,7 @@ public class Editor extends AppCompatActivity {
     private void saveData(String title, String fileName, String data) {
         // перевіряємо, чи змінився текст
 
-        String compiledFilesDir = getFilesDir()+"schema";
+        String compiledFilesDir = getFilesDir() + "schema";
         checkJavaFilesExistence(compiledFilesDir);
         // Тепер викликайте ваш метод compileToDex з вже перевіреною папкою compiledFilesDir
 
@@ -360,6 +382,7 @@ public class Editor extends AppCompatActivity {
             System.out.println(file.getName());
         }
     }
+
 
     private void executeTermuxCommand() {
         try {
@@ -477,6 +500,7 @@ public class Editor extends AppCompatActivity {
     }
 
 
+
     public static File createMainFolder(Context context) {
         File mainFolder = new File("/storage/emulated/0/Documents", MAIN_FOLDER_NAME);
         if (!mainFolder.exists()) {
@@ -501,6 +525,7 @@ public class Editor extends AppCompatActivity {
         }
         return scriptsFolder;
     }
+
     public static void copyFileFromAssets(Context context, String assetFilePath, File destinationFile) {
         AssetManager assetManager = context.getAssets();
         try {
@@ -520,4 +545,82 @@ public class Editor extends AppCompatActivity {
             Log.e("FileHelper", "Error copying file from assets: " + assetFilePath, e);
         }
     }
+
+    private void openFilePicker() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"audio/wav", "audio/ogg", "audio/mp3", "image/jpeg", "image/png"});
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(intent, PICK_FILE_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_FILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            if (uri != null) {
+// Зберігаємо файл у відповідну папку
+                saveFileToFolder(uri);
+            }
+        }
+    }
+
+    private void saveFileToFolder(Uri uri) {
+        String fileName = getFileName(uri);
+        String destinationFolderPath = getDestinationFolderPath(uri);
+
+        File destinationFolder = new File(destinationFolderPath);
+        if (!destinationFolder.exists()) {
+            destinationFolder.mkdirs(); // Створюємо папку, якщо вона не існує
+        }
+
+        File destinationFile = new File(destinationFolder, fileName);
+        try (InputStream inputStream = getContentResolver().openInputStream(uri);
+             OutputStream outputStream = new FileOutputStream(destinationFile)) {
+
+            if (inputStream == null) {
+                Toast.makeText(this, "Failed to open file", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+
+            Toast.makeText(this, "File saved to " + destinationFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            Toast.makeText(this, "Failed to save file", Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressLint("Range")
+    private String getFileName(Uri uri) {
+        String fileName = "unknown";
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    fileName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+            }
+        } else if (uri.getScheme().equals("file")) {
+            fileName = new File(uri.getPath()).getName();
+        }
+        return fileName;
+    }
+    private String getDestinationFolderPath(Uri uri) {
+        String mimeType = getContentResolver().getType(uri);
+        if (mimeType != null) {
+            if (mimeType.startsWith("image/")) {
+                return "/storage/emulated/0/Documents/GenCoreLite/"+title+"/images";
+            } else if (mimeType.startsWith("audio/")) {
+                return "/storage/emulated/0/Documents/GenCoreLite/"+title+"/raw";
+            }
+        }
+        return "/storage/emulated/0/Download/GenCoreLite"; // Папка за замовчуванням
+    }
+
 }
