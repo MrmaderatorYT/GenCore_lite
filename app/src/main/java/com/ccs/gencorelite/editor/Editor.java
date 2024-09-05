@@ -110,28 +110,31 @@ public class Editor extends AppCompatActivity {
                     documentsDirectory.mkdirs(); // Створюємо директорію, якщо вона не існує
                 }
                 File destinationFile = new File(documentsDirectory, "build_script.sh");
-                File destinationFile1 = new File(documentsDirectory, "game.kv");
-                File destinationFile2 = new File(documentsDirectory, "main.kv");
-                File destinationFile3 = new File(documentsDirectory, "info.kv");
-                File destinationFile4 = new File(documentsDirectory, "settings.kv");
-                File destinationFile5 = new File(documentsDirectory, "main.py");
-                File destinationFile6 = new File(documentsDirectory, "dialogues.json");
-                File destinationFile7 = new File(documentsDirectory, "buildozer.spec");
+                File apksigner = new File(documentsDirectory, "apksigner");
+                File apksigner_jar = new File(documentsDirectory, "apksigner.jar");
+                File zipalign = new File(documentsDirectory, "zipalign");
+                File destinationFile1 = new File(documentsDirectory, "test.sh");
+                File androidJar = new File(documentsDirectory, "android.jar");
+
 
                 final boolean b = destinationFile.setExecutable(true);
+                final boolean a = destinationFile1.setExecutable(true);
+                final boolean c = zipalign.setExecutable(true);
+                final boolean d = apksigner.setExecutable(true);
 
                 // Launch Termux with the script
                 launchTermuxScript();
                 try {
                     inputStream = assetManager.open("build_script.sh");
                     copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
-                    copyFileFromAssets(Editor.this, "game.kv", destinationFile1);
-                    copyFileFromAssets(Editor.this, "main.kv", destinationFile2);
-                    copyFileFromAssets(Editor.this, "info.kv", destinationFile3);
-                    copyFileFromAssets(Editor.this, "settings.kv", destinationFile4);
-                    copyFileFromAssets(Editor.this, "main.py", destinationFile5);
-                    copyFileFromAssets(Editor.this, "dialogues.json", destinationFile6);
-                    copyFileFromAssets(Editor.this, "buildozer.spec", destinationFile7);
+                    copyFileFromAssets(Editor.this, "test.sh", destinationFile1);
+                    copyFileFromAssets(Editor.this, "android.jar", androidJar);
+                    copyFileFromAssets(Editor.this, "zipalign", zipalign);
+                    copyFileFromAssets(Editor.this, "apksigner", apksigner);
+                    copyFileFromAssets(Editor.this, "apksigner.jar", apksigner_jar);
+                    File destinationFolder = new File(getFilesDir(), "/storage/emulated/0/Documents/GenCoreLite/scripts");
+                    copyAssets(Editor.this, "project", "/storage/emulated/0/Documents/GenCoreLite/scripts");
+
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -545,7 +548,43 @@ public class Editor extends AppCompatActivity {
             Log.e("FileHelper", "Error copying file from assets: " + assetFilePath, e);
         }
     }
+    public static void copyAssets(Context context, String assetDir, String targetDir) throws IOException {
+        AssetManager assetManager = context.getAssets();
+        String[] files = assetManager.list(assetDir);
+        if (files == null) return;
 
+        File targetDirectory = new File(targetDir);
+        if (!targetDirectory.exists()) {
+            targetDirectory.mkdirs();  // Створити директорію, якщо вона ще не існує
+        }
+
+        for (String file : files) {
+            InputStream in;
+            OutputStream out;
+
+            // Перевіряємо, чи це директорія, чи файл
+            if (assetManager.list(assetDir + "/" + file).length == 0) {
+                // Це файл, копіюємо його
+                in = assetManager.open(assetDir + "/" + file);
+                File outFile = new File(targetDir, file);
+                out = new FileOutputStream(outFile);
+
+                // Копіюємо байти файлу
+                byte[] buffer = new byte[1024];
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                }
+
+                in.close();
+                out.flush();
+                out.close();
+            } else {
+                // Це директорія, рекурсивно копіюємо файли
+                copyAssets(context, assetDir + "/" + file, targetDir + "/" + file);
+            }
+        }
+    }
     private void openFilePicker() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.setType("*/*");

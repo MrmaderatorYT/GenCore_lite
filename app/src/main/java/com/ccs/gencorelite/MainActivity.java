@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -245,9 +246,56 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
-    private void renameFolder(String folderName) {
-        // Ваш код для перейменування папки
+    private void renameFolder(String oldFolderName) {
+        // Показати діалог для введення нової назви папки
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Enter new folder name");
+
+        // Введення нової назви папки
+        final EditText input = new EditText(this);
+        builder.setView(input);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String newFolderName = input.getText().toString().trim();
+
+                if (newFolderName.isEmpty()) {
+                    Toast.makeText(getApplicationContext(), "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Перевірка наявності папки з новим ім'ям
+                File oldFolder = new File(getFilesDir(), "Projects" + File.separator + oldFolderName);
+                File newFolder = new File(getFilesDir(), "Projects" + File.separator + newFolderName);
+
+                if (newFolder.exists()) {
+                    Toast.makeText(getApplicationContext(), "Folder with this name already exists", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Перейменування папки
+                boolean renamed = oldFolder.renameTo(newFolder);
+                if (renamed) {
+                    Toast.makeText(getApplicationContext(), "Folder renamed successfully", Toast.LENGTH_SHORT).show();
+                    // Оновити список папок
+                    showFolderDialog();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Failed to rename folder", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
     }
+
 
     private void deleteFolder(String folderName) {
         // Отримання шляху до папки
