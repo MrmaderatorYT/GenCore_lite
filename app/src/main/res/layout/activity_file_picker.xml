@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+    <ImageView
+        android:id="@+id/import_file"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_add"
+        android:scaleType="fitXY"/>
+    <!-- Ліва частина з RecyclerView для відображення файлів -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical" />
+
+    <!-- Права частина для детального відображення вибраного файлу -->
+    <!-- Права частина для відображення вибраного файлу та метаданих -->
+    <LinearLayout
+        android:id="@+id/detail_view"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="3"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Зображення -->
+        <ImageView
+            android:id="@+id/image_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scaleType="centerInside" />
+
+        <!-- Кнопка для увімкнення/вимкнення музики -->
+        <ImageButton
+            android:id="@+id/music_toggle_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="16dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_play_24"
+            android:contentDescription="" />
+
+        <!-- ProgressBar для відображення довжини музики -->
+        <ProgressBar
+            android:id="@+id/music_progress_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/music_toggle_button"
+            android:layout_marginTop="16dp"
+
+            android:max="100"
+            android:progress="0"
+            android:indeterminate="false" />
+        <!-- Метадані: розмір файлу
+        android:progressDrawable="@drawable/progress_bar_drawable"
+        -->
+        <TextView
+            android:id="@+id/file_size_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="File size:" />
+
+        <!-- Додаткові метадані -->
+        <TextView
+            android:id="@+id/metadata_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Metadata:" />
+    </LinearLayout>
+
+</LinearLayout>

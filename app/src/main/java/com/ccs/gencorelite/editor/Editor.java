@@ -222,7 +222,10 @@ public class Editor extends AppCompatActivity {
         add_file.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openFilePicker();
+                //openFilePicker();
+                Intent intent = new Intent(Editor.this, FilePicker.class);
+                startActivity(intent);
+                overridePendingTransition(0, 0);
             }
         });
     }
