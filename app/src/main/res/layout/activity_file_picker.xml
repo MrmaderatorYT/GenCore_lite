@@ -46,8 +46,8 @@
             android:contentDescription="" />
 
         <!-- ProgressBar для відображення довжини музики -->
-        <ProgressBar
-            android:id="@+id/music_progress_bar"
+        <SeekBar
+            android:id="@+id/music_seek_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/music_toggle_button"

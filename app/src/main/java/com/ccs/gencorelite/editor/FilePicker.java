@@ -13,7 +13,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,7 +48,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
     private ImageView import_btn;
 
     private ImageButton musicToggleButton;
-    private ProgressBar musicProgressBar;
+    private SeekBar musicSeekBar;
     private MediaPlayer mediaPlayer;
     private boolean isMusicPlaying = false;
     private Handler handler = new Handler();
@@ -68,7 +68,27 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
         import_btn = findViewById(R.id.import_file);
 
         musicToggleButton = findViewById(R.id.music_toggle_button);
-        musicProgressBar = findViewById(R.id.music_progress_bar);
+        musicSeekBar = findViewById(R.id.music_seek_bar);
+
+
+        musicSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && mediaPlayer != null) {
+                    mediaPlayer.seekTo(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // Нічого не робимо
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // Нічого не робимо
+            }
+        });
 
 
 
@@ -114,6 +134,9 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
             Toast.makeText(this, "File URI is invalid", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (fileItem.isAudio()) {
+            setupMediaPlayer(fileUri);
+        }
         // Визначаємо розмір файлу
         long fileSize = getFileSize(fileUri);
         fileSizeText.setText("File size: " + fileSize + " bytes");
@@ -123,12 +146,12 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
             imageView.setImageURI(fileUri);
             imageView.setVisibility(View.VISIBLE);
             musicToggleButton.setVisibility(View.GONE);
-            musicProgressBar.setVisibility(View.GONE);
+            musicSeekBar.setVisibility(View.GONE);
         } else if (fileItem.isAudio()) {
             imageView.setImageResource(android.R.color.transparent);  // Очистити зображення
             imageView.setVisibility(View.GONE);
             musicToggleButton.setVisibility(View.VISIBLE);
-            musicProgressBar.setVisibility(View.VISIBLE);
+            musicSeekBar.setVisibility(View.VISIBLE);
 
             // Завантаження і налаштування медіаплеєра для відображення прогресу
             setupMediaPlayer(fileUri);
@@ -147,16 +170,24 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
 
         mediaPlayer = MediaPlayer.create(this, uri);
         mediaPlayer.setOnPreparedListener(mp -> {
-            musicProgressBar.setMax(mediaPlayer.getDuration());
+            musicSeekBar.setMax(mediaPlayer.getDuration());  // Встановлюємо максимальне значення SeekBar як тривалість музики
             handler.post(updateProgressTask);
         });
-
+        mediaPlayer.setOnCompletionListener(mp -> {
+            mp.reset();
+            try {
+                mp.setDataSource(uri.toString());
+                mp.prepare();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         updateProgressTask = new Runnable() {
             @Override
             public void run() {
                 if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                    musicProgressBar.setProgress(mediaPlayer.getCurrentPosition());
-                    handler.postDelayed(this, 1000);  // Оновлювати кожну секунду
+                    musicSeekBar.setProgress(mediaPlayer.getCurrentPosition());  // Оновлюємо SeekBar
+                    handler.postDelayed(this, 1000);  // Оновлюємо прогрес кожну секунду
                 }
             }
         };
@@ -187,6 +218,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
             isMusicPlaying = false;
             musicToggleButton.setImageResource(R.drawable.ic_play_24);  // Зображення для вимкненої музики
             handler.removeCallbacks(updateProgressTask);
+
         }
     }
 
@@ -292,7 +324,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
     }
     private void loadProjectImages() {
         // Шлях до проектної папки
-        File projectFolder = new File(getFilesDir(), "Projects/" + projectFolderName +"/res");
+        File projectFolder = new File(getFilesDir(), "Projects/" + projectFolderName + "/res");
 
         // Перевірка чи існує папка
         if (!projectFolder.exists() || !projectFolder.isDirectory()) {
@@ -307,15 +339,22 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
             for (File file : files) {
                 Uri fileUri = Uri.fromFile(file);
                 String fileName = file.getName();
-                FileItem fileItem = new FileItem(fileName, fileUri, true, false);
+
+                // Визначаємо чи це зображення чи аудіо на основі розширення файлу
+                boolean isImage = fileName.endsWith(".jpg") || fileName.endsWith(".png");
+                boolean isAudio = fileName.endsWith(".mp3") || fileName.endsWith(".ogg") || fileName.endsWith(".wav");
+
+                // Створюємо об'єкт FileItem з коректними значеннями для зображень та аудіо
+                FileItem fileItem = new FileItem(fileName, fileUri, isImage, isAudio);
                 fileItems.add(fileItem);
             }
 
             fileAdapter.notifyDataSetChanged(); // Оновлення списку в RecyclerView
         } else {
-            Toast.makeText(this, "No images found in the project folder.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No images or audio found in the project folder.", Toast.LENGTH_SHORT).show();
         }
     }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
