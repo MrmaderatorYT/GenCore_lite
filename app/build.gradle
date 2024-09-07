@@ -41,6 +41,11 @@ android {
         productFlavors {
             create("py310") { dimension = "pyVersion" }
         }
+        externalNativeBuild {
+            cmake {
+                cppFlags ''
+            }
+        }
     }
     chaquopy {
         productFlavors {
@@ -64,6 +69,12 @@ android {
             assets {
                 srcDirs 'src\\main\\assets'
             }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
         }
     }
 }
