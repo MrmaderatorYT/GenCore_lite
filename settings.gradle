@@ -3,8 +3,6 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        maven{url "https://chaquo.com/maven"}
-
         maven { url "https://jitpack.io" }
 
     }

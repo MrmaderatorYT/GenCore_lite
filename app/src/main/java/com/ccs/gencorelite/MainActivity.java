@@ -126,9 +126,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private void createApp() {
-
-    }
 
     private void fadeInAnimation() {
         // Сховати елемент перед початком анімації
@@ -339,12 +336,7 @@ public class MainActivity extends AppCompatActivity {
         String folderStr = folder.toString();
         Log.d("App", "Dir: "+folderStr);
 
-        // Отримуємо список файлів у папці
-        File[] files = folder.listFiles();
-
-        // Тепер ви можете зробити що завгодно з цими файлами, наприклад, відобразити їх у ListView або RecyclerView
-        // Чи виконати будь-яку іншу логіку, яка вам потрібна для роботи з цими файлами
-
+        
 
         Intent intent = new Intent(MainActivity.this, Editor.class);
         startActivity(intent);

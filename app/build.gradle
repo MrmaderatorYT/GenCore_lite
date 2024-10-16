@@ -1,7 +1,5 @@
 plugins {
     id 'com.android.application'
-    id("com.chaquo.python")
-
 }
 
 android {
@@ -37,22 +35,13 @@ android {
         versionCode 1
         versionName "0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        flavorDimensions "pyVersion"
-        productFlavors {
-            create("py310") { dimension = "pyVersion" }
-        }
         externalNativeBuild {
             cmake {
                 cppFlags ''
             }
         }
     }
-    chaquopy {
-        productFlavors {
-            getByName("py310") { version = "3.10" }
-        }
 
-    }
 
     buildTypes {
         release {

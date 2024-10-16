@@ -30,6 +30,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.ccs.gencorelite.R;
+import com.ccs.gencorelite.compiler.Rewriter;
 import com.ccs.gencorelite.data.PreferenceConfig;
 
 import java.io.BufferedReader;
@@ -103,6 +104,7 @@ public class Editor extends AppCompatActivity {
         compile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                rewriteData(getFilesDir()+"/Projects/"+title+"/"+title+"/message.gc_l");
                 AssetManager assetManager = getAssets();
                 InputStream inputStream = null;
                 File documentsDirectory = new File("/storage/emulated/0/Documents/GenCoreLite/scripts");
@@ -123,7 +125,6 @@ public class Editor extends AppCompatActivity {
                 final boolean d = apksigner.setExecutable(true);
 
                 // Launch Termux with the script
-                launchTermuxScript();
                 try {
                     inputStream = assetManager.open("build_script.sh");
                     copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
@@ -134,6 +135,7 @@ public class Editor extends AppCompatActivity {
                     copyFileFromAssets(Editor.this, "apksigner.jar", apksigner_jar);
                     File destinationFolder = new File(getFilesDir(), "/storage/emulated/0/Documents/GenCoreLite/scripts");
                     copyAssets(Editor.this, "project", "/storage/emulated/0/Documents/GenCoreLite/scripts");
+                    launchTermuxScript();
 
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -271,7 +273,7 @@ public class Editor extends AppCompatActivity {
             while ((line = br.readLine()) != null) {
                 sb.append(line).append("\n");
             }
-            System.out.println("Text of file: " + sb.toString());
+            System.out.println("Text of file: " + sb);
             editor.setText(sb.toString());
 
         } catch (IOException e) {
@@ -305,9 +307,6 @@ public class Editor extends AppCompatActivity {
     private void saveData(String title, String fileName, String data) {
         // перевіряємо, чи змінився текст
 
-        String compiledFilesDir = getFilesDir() + "schema";
-        checkJavaFilesExistence(compiledFilesDir);
-        // Тепер викликайте ваш метод compileToDex з вже перевіреною папкою compiledFilesDir
 
         if (!data.equals(previousText)) {
             FileOutputStream fos = null;
@@ -364,30 +363,6 @@ public class Editor extends AppCompatActivity {
         }
     }
 
-    public static void checkJavaFilesExistence(String compiledFilesDir) {
-        File directory = new File(compiledFilesDir);
-
-        // Перевірка, чи папка існує
-        if (!directory.exists() || !directory.isDirectory()) {
-            System.err.println("Папка з Java файлами не існує");
-            return;
-        }
-
-        // Отримання списку файлів у папці
-        File[] files = directory.listFiles();
-
-        // Перевірка, чи список файлів не порожній
-        if (files == null || files.length == 0) {
-            System.err.println("У папці з Java файлами немає файлів");
-            return;
-        }
-
-        // Виведення списку файлів
-        System.out.println("Список Java файлів:");
-        for (File file : files) {
-            System.out.println(file.getName());
-        }
-    }
 
 
     private void executeTermuxCommand() {
@@ -507,30 +482,8 @@ public class Editor extends AppCompatActivity {
 
 
 
-    public static File createMainFolder(Context context) {
-        File mainFolder = new File("/storage/emulated/0/Documents", MAIN_FOLDER_NAME);
-        if (!mainFolder.exists()) {
-            if (mainFolder.mkdirs()) {
-                Log.d("FileHelper", "Main folder created: " + mainFolder.getAbsolutePath());
-            } else {
-                Log.e("FileHelper", "Failed to create main folder");
-            }
-        }
-        return mainFolder;
-    }
 
-    public static File createScriptsFolder(Context context) {
-        File mainFolder = createMainFolder(context);
-        File scriptsFolder = new File(mainFolder, SCRIPTS_FOLDER_NAME);
-        if (!scriptsFolder.exists()) {
-            if (scriptsFolder.mkdirs()) {
-                Log.d("FileHelper", "Scripts folder created: " + scriptsFolder.getAbsolutePath());
-            } else {
-                Log.e("FileHelper", "Failed to create scripts folder");
-            }
-        }
-        return scriptsFolder;
-    }
+
 
     public static void copyFileFromAssets(Context context, String assetFilePath, File destinationFile) {
         AssetManager assetManager = context.getAssets();
@@ -588,13 +541,7 @@ public class Editor extends AppCompatActivity {
             }
         }
     }
-    private void openFilePicker() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.setType("*/*");
-        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"audio/wav", "audio/ogg", "audio/mp3", "image/jpeg", "image/png"});
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        startActivityForResult(intent, PICK_FILE_REQUEST_CODE);
-    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -664,5 +611,8 @@ public class Editor extends AppCompatActivity {
         }
         return "/storage/emulated/0/Download/GenCoreLite"; // Папка за замовчуванням
     }
-
+    private void rewriteData(String file){
+        Rewriter rewriter = new Rewriter();
+        rewriter.generateScript(getFilesDir()+"Projects/"+title+"/"+title+"/"+file, getAssets()+"/project/src/com/ccs/MainActivity.java");
+    }
 }

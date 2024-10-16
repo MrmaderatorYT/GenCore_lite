@@ -41,12 +41,12 @@ public class PreferenceConfig {
     public static void setPackage(Context context, String value) {
         SharedPreferences pref = context.getSharedPreferences(REFERENCE, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
-        editor.putString(VERSION, value);
+        editor.putString(PACKAGE, value);
         editor.apply();
     }
 
     public static String getPackage(Context context) {
         SharedPreferences pref = context.getSharedPreferences(REFERENCE, Context.MODE_PRIVATE);
-        return pref.getString(VERSION, "");
+        return pref.getString(PACKAGE, "");
     }
 }
