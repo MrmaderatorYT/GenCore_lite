@@ -112,6 +112,7 @@ public class Editor extends AppCompatActivity {
                     documentsDirectory.mkdirs(); // Створюємо директорію, якщо вона не існує
                 }
                 File destinationFile = new File(documentsDirectory, "build_script.sh");
+                File build = new File(documentsDirectory, "/test/build.sh");
                 File apksigner = new File(documentsDirectory, "apksigner");
                 File apksigner_jar = new File(documentsDirectory, "apksigner.jar");
                 File zipalign = new File(documentsDirectory, "zipalign");
@@ -123,6 +124,8 @@ public class Editor extends AppCompatActivity {
                 final boolean a = destinationFile1.setExecutable(true);
                 final boolean c = zipalign.setExecutable(true);
                 final boolean d = apksigner.setExecutable(true);
+                final boolean f = apksigner_jar.setExecutable(true);
+                final boolean buildScript = apksigner.setExecutable(true);
 
                 // Launch Termux with the script
                 try {
@@ -135,6 +138,7 @@ public class Editor extends AppCompatActivity {
                     copyFileFromAssets(Editor.this, "apksigner.jar", apksigner_jar);
                     File destinationFolder = new File(getFilesDir(), "/storage/emulated/0/Documents/GenCoreLite/scripts");
                     copyAssets(Editor.this, "project", "/storage/emulated/0/Documents/GenCoreLite/scripts");
+                    copyAssets(Editor.this, "test", "/storage/emulated/0/Documents/GenCoreLite/scripts");
                     launchTermuxScript();
 
                 } catch (IOException e) {
@@ -611,8 +615,22 @@ public class Editor extends AppCompatActivity {
         }
         return "/storage/emulated/0/Download/GenCoreLite"; // Папка за замовчуванням
     }
-    private void rewriteData(String file){
+    private void rewriteData(String inputFilePath) {
         Rewriter rewriter = new Rewriter();
-        rewriter.generateScript(getFilesDir()+"Projects/"+title+"/"+title+"/"+file, getAssets()+"/project/src/com/ccs/MainActivity.java");
+
+        // Шляхи до вхідного та вихідного файлів
+        String inputPath = inputFilePath;
+        String outputPath ="storage/emulated/0/Documents/scripts/com/ccs/Game_First_Activity.java"; // Шлях до вихідного файлу
+
+        // Переконайтеся, що директорія вихідного файлу існує
+        File outputDir = new File(getFilesDir(), "output");
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+
+        // Виклик нативного методу
+        rewriter.generateScript(inputPath, outputPath);
+
+        // Можливо, вам потрібно скопіювати згенерований файл до папки assets або інше місце
     }
 }

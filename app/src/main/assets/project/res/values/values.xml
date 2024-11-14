@@ -1,0 +1,42 @@
+<resources>
+
+    <!-- Рядки -->
+    <string name="app_name">Romantic Adventure</string>
+    <string name="hello_world">Привіт, світ!</string>
+    <string name="start_game">Почати подорож</string>
+    <string name="volume_settings">Налаштування гучності</string>
+    <string name="settings">Налаштування</string>
+    <string name="type_of_spawning_text">Тип анімації тексту</string>
+    <string name="auto">Автоматично</string>
+    <string name="touching">Натисками</string>
+    <string name="info">Інфо</string>
+    <!-- Додайте інші рядки за потреби -->
+
+    <!-- Кольори -->
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <!-- Додайте інші кольори за потреби -->
+
+    <!-- Стилі -->
+    <style name="AppTheme" parent="android:Theme.Material.Light">
+        <!-- Вимикаємо Action Bar -->
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+
+        <!-- Повноекранний режим -->
+        <item name="android:windowFullscreen">true</item>
+
+        <!-- Первинні кольори -->
+        <item name="android:colorPrimary">@color/purple_500</item>
+        <item name="android:colorPrimaryDark">@color/purple_700</item>
+        <item name="android:colorAccent">@color/teal_200</item>
+
+        <!-- Колір статус-бара -->
+        <item name="android:statusBarColor">@color/purple_700</item>
+    </style>
+
+</resources>

@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 // Структура для збереження даних
 struct Entry {
@@ -31,23 +32,103 @@ int validateFileFormat(const std::string& filename) {
     return 0;  // Невідомий формат
 }
 
+// Функція для парсингу скрипту
+void parseScript(const std::string& scriptContent, std::vector<Entry>& entries) {
+    std::istringstream scriptStream(scriptContent);
+    std::string line;
+    std::string currentImage, currentName, currentMusic;
+    bool inBlock = false;
+
+    while (std::getline(scriptStream, line)) {
+        // Видалити зайві пробіли та символи переносу рядка
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+        line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+        line.erase(std::remove(line.begin(), line.end(), '\t'), line.end());
+        line.erase(std::remove_if(line.begin(), line.end(), ::isspace), line.end());
+
+        if (line.empty()) continue;
+
+        if (line.find('{') != std::string::npos) {
+            // Початок блоку
+            inBlock = true;
+            continue;
+        } else if (line.find('}') != std::string::npos) {
+            // Кінець блоку
+            inBlock = false;
+            currentImage.clear();
+            currentName.clear();
+            currentMusic.clear();
+            continue;
+        }
+
+        if (inBlock) {
+            // Всередині блоку - текстові рядки
+            Entry entry = {currentImage, currentName, line, currentMusic};
+            entries.push_back(entry);
+        } else {
+            // Зовні блоку - оновлення currentImage, currentName, currentMusic
+            std::vector<std::string> tokens;
+            std::stringstream ss(line);
+            std::string token;
+            while (std::getline(ss, token, ':')) {
+                tokens.push_back(token);
+            }
+
+            if (tokens.size() == 3) {
+                currentImage = tokens[0];
+                currentName = tokens[1];
+                currentMusic = tokens[2];
+            } else if (tokens.size() == 2) {
+                currentName = tokens[0];
+                currentMusic = tokens[1];
+            } else if (tokens.size() == 1) {
+                // Можливо, лише зображення або інше
+                // Можете додати додаткову обробку, якщо необхідно
+            }
+        }
+    }
+}
+
 // Функція для генерації Java коду
-void generateJavaCode(const Entry& entry, int index, std::ofstream& output) {
-    output << "public class Game_First_Activity extends MainActivity {\n"
+void generateJavaCode(const std::vector<Entry>& entries, std::ofstream& output) {
+    output << "package com.ccs.gencorelite;\n"
               "\n"
-              "    private WebView webView;\n"
-              "    private int katya, choose, textIndex = 0, value, indexArray, delayBetweenCharacters = 40, //затримка між спавном символів\n"
-              "            delayBetweenTexts = 2000; // затримка між спавнінгом іншого тексту з масиву;\n"
+              "import android.annotation.SuppressLint;\n"
+              "import android.content.pm.ActivityInfo;\n"
+              "import android.graphics.Color;\n"
+              "import android.media.MediaPlayer;\n"
+              "import android.os.Bundle;\n"
+              "import android.os.Handler;\n"
+              "import android.util.DisplayMetrics;\n"
+              "import android.util.TypedValue;\n"
+              "import android.view.View;\n"
+              "import android.view.ViewGroup;\n"
+              "import android.view.WindowManager;\n"
+              "import android.widget.Button;\n"
+              "import android.widget.LinearLayout;\n"
+              "import android.widget.RelativeLayout;\n"
+              "import android.widget.TextView;\n"
               "\n"
-              "    private static final int dialogContainerId = View.generateViewId(); // Генерируем уникальный идентификатор для контейнера\n"
+              "import androidx.appcompat.app.AppCompatActivity;\n"
+              "\n"
+              "import java.util.ArrayList;\n"
+              "import java.util.HashSet;\n"
+              "\n"
+              "public class Game_First_Activity extends AppCompatActivity {\n"
+              "\n"
+              "    private int textIndex = 0, delayBetweenCharacters = 40, // затримка між символами\n"
+              "            delayBetweenTexts = 2000; // затримка між текстами\n"
+              "\n"
+              "    private static final int dialogContainerId = View.generateViewId();\n"
               "\n"
               "    float volumeLvl;\n"
               "    MediaPlayer mediaPlayer;\n"
-              "    boolean type, historyBlockIsVisible = false, animationInProgress;\n"
+              "    boolean historyBlockIsVisible = false, animationInProgress;\n"
               "    private Button history, save, load, buttonElement, buttonSecondElement;\n"
               "    private RelativeLayout bg;\n"
               "    private TextView textElement, nameElement;\n"
               "    private ArrayList<Pair> textArray = new ArrayList<>();\n"
+              "    private HashSet<Integer> specialIndexes = new HashSet<>();\n"
               "\n"
               "    private static class Pair {\n"
               "        String name;\n"
@@ -58,7 +139,6 @@ void generateJavaCode(const Entry& entry, int index, std::ofstream& output) {
               "            this.name = name;\n"
               "            this.text = text;\n"
               "            this.value = value;\n"
-              "\n"
               "        }\n"
               "    }\n"
               "\n"
@@ -69,17 +149,15 @@ void generateJavaCode(const Entry& entry, int index, std::ofstream& output) {
               "        setContentView(R.layout.activity_game_first);\n"
               "        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE);\n"
               "        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);\n"
-              "        choose = PreferenceConfig.getChoose(this);\n"
+              "\n"
               "        history = findViewById(R.id.buttonHistory);\n"
               "        save = findViewById(R.id.fastSave_btn);\n"
               "        load = findViewById(R.id.fastLoad_btn);\n"
               "        bg = findViewById(R.id.bg);\n"
               "        textElement = findViewById(R.id.dialog);\n"
               "        nameElement = findViewById(R.id.name);\n"
-              "        type = PreferenceConfig.getAnimSwitchValue(this);\n"
               "        buttonElement = findViewById(R.id.first_btn);\n"
               "        buttonSecondElement = findViewById(R.id.second_btn);\n"
-              "        value = PreferenceConfig.getValue(this);\n"
               "\n"
               "        initializeTextArray();\n"
               "\n"
@@ -87,7 +165,7 @@ void generateJavaCode(const Entry& entry, int index, std::ofstream& output) {
               "        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION\n"
               "                | View.SYSTEM_UI_FLAG_FULLSCREEN;\n"
               "        decorView.setSystemUiVisibility(uiOptions);\n"
-              "        volumeLvl = PreferenceConfig.getVolumeLevel(this);\n"
+              "\n"
               "        mediaPlayer = MediaPlayer.create(this, R.raw.school);\n"
               "        mediaPlayer.setLooping(true);\n"
               "        mediaPlayer.setVolume(volumeLvl, volumeLvl);\n"
@@ -136,103 +214,31 @@ void generateJavaCode(const Entry& entry, int index, std::ofstream& output) {
               "\n"
               "    @Override\n"
               "    public void onBackPressed() {\n"
-              "        ExitConfirmationDialog.showExitConfirmationDialog(this);\n"
+              "        // Ваш код для обробки кнопки Назад\n"
               "    }\n"
               "\n"
               "    private void quickLoad() {\n"
               "        textElement.setText(\"\");\n"
-              "        textIndex = value;\n"
+              "        // Ваш код для швидкого завантаження\n"
               "    }\n"
               "\n"
               "    private void quickSave() {\n"
-              "        // Реализация быстрого сохранения\n"
-              "        PreferenceConfig.setValue(getApplicationContext(), textIndex);\n"
+              "        // Ваш код для швидкого збереження\n"
               "    }\n"
               "\n"
               "    private void showHistoryDialog() {\n"
-              "        historyBlockIsVisible = true;\n"
-              "        // Створення діалогового контейнера\n"
-              "        LinearLayout dialogContainer = new LinearLayout(this);\n"
-              "        dialogContainer.setId(dialogContainerId);\n"
-              "        dialogContainer.setLayoutParams(new ViewGroup.LayoutParams(\n"
-              "                convertDpToPx(300), // Ширина контейнера\n"
-              "                convertDpToPx(200) // Висота контейнера\n"
-              "        ));\n"
-              "        dialogContainer.setOrientation(LinearLayout.VERTICAL);\n"
-              "        dialogContainer.setBackgroundColor(Color.WHITE); // Білий колір фону\n"
-              "        dialogContainer.setPadding(convertDpToPx(10), convertDpToPx(10), convertDpToPx(10), convertDpToPx(10)); // Відступи всередині контейнера\n"
-              "        dialogContainer.setBackgroundResource(R.drawable.pink_bg); // Границя контейнера\n"
-              "        dialogContainer.setX(getScreenWidth() / 2f - convertDpToPx(150)); // Положення по горизонталі\n"
-              "        dialogContainer.setY(getScreenHeight() / 2f - convertDpToPx(100)); // Положення по вертикалі\n"
-              "\n"
-              "        // Створення елемента для відображення тексту\n"
-              "        LinearLayout textContainer = new LinearLayout(this);\n"
-              "        textContainer.setLayoutParams(new LinearLayout.LayoutParams(\n"
-              "                ViewGroup.LayoutParams.MATCH_PARENT,\n"
-              "                ViewGroup.LayoutParams.MATCH_PARENT\n"
-              "        ));\n"
-              "        textContainer.setOrientation(LinearLayout.VERTICAL);\n"
-              "        textContainer.setScrollbarFadingEnabled(false);\n"
-              "        textContainer.setVerticalScrollBarEnabled(true);\n"
-              "        textContainer.setHorizontalScrollBarEnabled(false);\n"
-              "\n"
-              "        // Додавання кожного ключа та значення з HashMap до текстового елемента\n"
-              "        for (int i = 0; i < textIndex; i++) {\n"
-              "            Pair pair = textArray.get(i);\n"
-              "\n"
-              "            TextView textView = new TextView(this);\n"
-              "            textView.setLayoutParams(new LinearLayout.LayoutParams(\n"
-              "                    ViewGroup.LayoutParams.MATCH_PARENT,\n"
-              "                    ViewGroup.LayoutParams.WRAP_CONTENT\n"
-              "            ));\n"
-              "            textView.setText(pair.name + \": \" + pair.text);\n"
-              "            textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);\n"
-              "            textView.setLineSpacing(0, 1.5f);\n"
-              "            textContainer.addView(textView);\n"
-              "            Log.d(\"TextIndex\", String.valueOf(textIndex));\n"
-              "        }\n"
-              "\n"
-              "        // Додавання текстового елемента до діалогового контейнера\n"
-              "        dialogContainer.addView(textContainer);\n"
-              "\n"
-              "        // Додавання діалогового контейнера до кореневої розмітки активності\n"
-              "        ((ViewGroup) getWindow().getDecorView().getRootView()).addView(dialogContainer);\n"
-              "    }\n"
-              "\n"
-              "    // Метод для преобразования dp в px\n"
-              "    private int convertDpToPx(int dp) {\n"
-              "        float scale = getResources().getDisplayMetrics().density;\n"
-              "        return (int) (dp * scale + 0.5f);\n"
-              "    }\n"
-              "\n"
-              "    // Метод для получения ширины экрана\n"
-              "    private int getScreenWidth() {\n"
-              "        DisplayMetrics displayMetrics = new DisplayMetrics();\n"
-              "        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);\n"
-              "        return displayMetrics.widthPixels;\n"
-              "    }\n"
-              "\n"
-              "    // Метод для получения высоты экрана\n"
-              "    private int getScreenHeight() {\n"
-              "        DisplayMetrics displayMetrics = new DisplayMetrics();\n"
-              "        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);\n"
-              "        return displayMetrics.heightPixels;\n"
+              "        // Ваш код для відображення історії\n"
               "    }\n"
               "\n"
               "    private void hideHistoryDialog() {\n"
-              "        historyBlockIsVisible = false;\n"
-              "        ViewGroup rootView = (ViewGroup) getWindow().getDecorView().getRootView();\n"
-              "        View dialogContainer = rootView.findViewById(dialogContainerId);\n"
-              "        if (dialogContainer != null) {\n"
-              "            rootView.removeView(dialogContainer);\n"
-              "        }\n"
+              "        // Ваш код для приховування історії\n"
               "    }\n"
               "\n"
               "    private void animateText() {\n"
               "        if (textIndex < textArray.size()) {\n"
               "            Pair pair = textArray.get(textIndex);\n"
               "\n"
-              "            // Якщо ключ не містить спешл значення, показати ім'я\n"
+              "            // Якщо ключ не містить спеціальне значення, показати ім'я\n"
               "            if (specialIndexes.contains(textIndex)) {\n"
               "                nameElement.setText(pair.name);\n"
               "            } else {\n"
@@ -257,7 +263,7 @@ void generateJavaCode(const Entry& entry, int index, std::ofstream& output) {
               "                        new Handler().postDelayed(new Runnable() {\n"
               "                            @Override\n"
               "                            public void run() {\n"
-              "                                animateText(); // Call the method recursively to show the next text\n"
+              "                                animateText(); // Рекурсивний виклик для наступного тексту\n"
               "                            }\n"
               "                        }, delayBetweenTexts);\n"
               "                    }\n"
@@ -268,18 +274,30 @@ void generateJavaCode(const Entry& entry, int index, std::ofstream& output) {
               "        }\n"
               "    }\n"
               "\n"
-              "    private void initializeTextArray() {\n"
-              "\n"
-              "textArray.add(new Pair(" << index << ", \"" << entry.name << "\", \"" << entry.text << "\", \""
-           << entry.image << "\", \"" << entry.music << "\"));\n"
-              "\n"
-              "        \n"
-              "\n"
-              "        // Додати інші пари за необхідності\n"
-              "    }\n"
-              "    \n"
-              "}";
+              "    private void initializeTextArray() {\n";
 
+    // Додати всі записи з entries
+    for (size_t index = 0; index < entries.size(); ++index) {
+        const Entry& entry = entries[index];
+        output << "        textArray.add(new Pair(" << index << ", \"" << entry.name << "\", \"" << entry.text << "\"));\n";
+
+        // Якщо entry має особливі параметри, можна додати їх до specialIndexes
+        if (!entry.image.empty() || !entry.music.empty()) {
+            output << "        specialIndexes.add(" << index << ");\n";
+        }
+    }
+
+    output << "    }\n"
+              "\n"
+              "    private void firstBtn() {\n"
+              "        // Ваш код для першої кнопки\n"
+              "    }\n"
+              "\n"
+              "    private void secondBtn() {\n"
+              "        // Ваш код для другої кнопки\n"
+              "    }\n"
+              "\n"
+              "}\n";
 }
 
 // Основна функція для читання даних і генерації Java коду
@@ -302,50 +320,10 @@ Java_com_ccs_gencorelite_compiler_Rewriter_generateScript(JNIEnv* env, jobject /
         return;
     }
 
+    std::string scriptContent((std::istreambuf_iterator<char>(inputFile)), std::istreambuf_iterator<char>());
     std::vector<Entry> entries;
-    std::string image, name, text, music;
-    std::string prevImage, prevName, prevMusic;
-    int index = 0;
-    std::string line;
-
-    // Читання вхідного файлу построчно
-    while (std::getline(inputFile, line)) {
-        if (line.find("{") != std::string::npos || line.find("}") != std::string::npos) {
-            continue; // Пропуск дужок
-        }
-
-        std::istringstream lineStream(line);
-        std::string temp;
-
-        // Блок зображення, імені, музики
-        if (std::getline(lineStream, image, ':') && std::getline(lineStream, name, ':') && std::getline(lineStream, music)) {
-            if (validateFileFormat(image) != 1 || validateFileFormat(music) != 2) {
-                std::cerr << "Невірний формат файлу в рядку: " << line << "\n";
-                return;
-            }
-            prevImage = image;
-            prevName = name;
-            prevMusic = music;
-        }
-            // Блок імені, музики
-        else if (std::getline(lineStream, name, ':') && std::getline(lineStream, music)) {
-            prevName = name;
-            prevMusic = music;
-        }
-            // Текстовий блок
-        else if (std::getline(lineStream, text)) {
-            Entry entry = {prevImage, prevName, text, prevMusic};
-            entries.push_back(entry);
-        }
-        else {
-            std::cerr << "Невірний формат рядка: " << line << "\n";
-        }
-    }
-
-    // Генерація Java коду
-    for (const auto& entry : entries) {
-        generateJavaCode(entry, index++, outputFile);
-    }
+    parseScript(scriptContent, entries);
+    generateJavaCode(entries, outputFile);
 
     inputFile.close();
     outputFile.close();

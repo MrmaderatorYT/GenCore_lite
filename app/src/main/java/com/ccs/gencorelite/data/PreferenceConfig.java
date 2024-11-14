@@ -9,6 +9,7 @@ public class PreferenceConfig {
     public static final String VERSION = "version";
     public static final String PACKAGE = "package";
 
+    public static final String DEBUGMODE = "debug_mode";
 
 
     public static void registerPref(Context context, SharedPreferences.OnSharedPreferenceChangeListener listener) {
@@ -48,5 +49,16 @@ public class PreferenceConfig {
     public static String getPackage(Context context) {
         SharedPreferences pref = context.getSharedPreferences(REFERENCE, Context.MODE_PRIVATE);
         return pref.getString(PACKAGE, "");
+    }
+    public static void setDebugmode(Context context, int value) {
+        SharedPreferences pref = context.getSharedPreferences(REFERENCE, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putInt(DEBUGMODE, value);
+        editor.apply();
+    }
+//0 - вимкнений, 1 - увімкнений
+    public static int getDebugmode(Context context) {
+        SharedPreferences pref = context.getSharedPreferences(REFERENCE, Context.MODE_PRIVATE);
+        return pref.getInt(DEBUGMODE, 0);
     }
 }
