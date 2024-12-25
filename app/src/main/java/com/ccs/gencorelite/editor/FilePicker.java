@@ -6,9 +6,11 @@ import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.provider.OpenableColumns;
 import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -138,8 +140,8 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
             setupMediaPlayer(fileUri);
         }
         // Визначаємо розмір файлу
-        long fileSize = getFileSize(fileUri);
-        fileSizeText.setText("File size: " + fileSize + " bytes");
+        String fileSize = getFileSize(fileUri);
+        fileSizeText.setText("File size: " + fileSize);
 
         // Відображення зображення (якщо це картинка)
         if (fileItem.isImage()) {
@@ -223,15 +225,25 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
     }
 
 
-    private long getFileSize(Uri uri) {
+    private String getFileSize(Uri uri) {
         Cursor cursor = getContentResolver().query(uri, null, null, null, null);
         if (cursor != null && cursor.moveToFirst()) {
             int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
-            long size = cursor.getLong(sizeIndex);
+            long sizeInBytes = cursor.getLong(sizeIndex);
             cursor.close();
-            return size;
+
+            // Конвертуємо розмір у мегабайти або гігабайти
+            if (sizeInBytes < 1024 * 1024) {
+                return sizeInBytes + " Bytes"; // Якщо розмір менше 1 МБ, повертаємо в байтах
+            } else if (sizeInBytes < 1024 * 1024 * 1024) {
+                double sizeInMB = sizeInBytes / (1024.0 * 1024.0);
+                return String.format("%.2f MB", sizeInMB); // Повертаємо в мегабайтах
+            } else {
+                double sizeInGB = sizeInBytes / (1024.0 * 1024.0 * 1024.0);
+                return String.format("%.2f GB", sizeInGB); // Повертаємо в гігабайтах
+            }
         }
-        return 0;
+        return "0 Б"; // Якщо не вдалося отримати розмір
     }
 
     private void duplicateFileToProjectFolder(Uri uri, String fileName) {
@@ -242,6 +254,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
         if (!projectFolder.exists()) {
             boolean folderCreated = projectFolder.mkdirs();
             if (!folderCreated) {
+                Log.d("FILEPICKER / DublicateFileToProjectFolder", "Failed to create project folder.");
                 Toast.makeText(this, "Failed to create project folder.", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -250,6 +263,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
         // Перевірка чи файл вже існує в проектній папці
         File destinationFile = new File(projectFolder, fileName);
         if (destinationFile.exists()) {
+            Log.d("FILEPICKER / DublicateFileToProjectFolder", "File already exists in the project folder.");
             Toast.makeText(this, "File already exists in the project folder.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -259,6 +273,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
              OutputStream outputStream = new FileOutputStream(destinationFile)) {
 
             if (inputStream == null) {
+                Log.d("FILEPICKER / DublicateFileToProjectFolder", "Failed to open input stream.");
                 Toast.makeText(this, "Failed to open input stream.", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -270,14 +285,158 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
             }
 
             Toast.makeText(this, "File copied to " + destinationFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+            Log.d("FILEPICKER / DublicateFileToProjectFolder", "File copied to " + destinationFile.getAbsolutePath());
+
+            // Перевірка типу файлу
+            if (fileName.endsWith(".jpg") || fileName.endsWith(".png")) {
+                // Шлях до папки /storage/emulated/0/Documents/GenCoreLite/scripts/res/drawable
+                File externalFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "GenCoreLite/scripts/res/drawable");
+
+                // Перевірка чи існує папка
+                if (!externalFolder.exists()) {
+                    boolean folderCreated = externalFolder.mkdirs();
+                    if (!folderCreated) {
+                        Log.d("FILEPICKER / DublicateFileToProjectFolder", "Failed to create external folder.");
+                        Toast.makeText(this, "Failed to create external folder.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }
+
+                // Перевірка чи файл вже існує в зовнішній папці
+                File externalDestinationFile = new File(externalFolder, fileName);
+                if (externalDestinationFile.exists()) {
+                    Log.d("FILEPICKER / DublicateFileToProjectFolder", "File already exists in the external folder.");
+                    Toast.makeText(this, "File already exists in the external folder.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Копіювання файлу в зовнішню папку
+                try (InputStream externalInputStream = getContentResolver().openInputStream(uri); // Новий InputStream
+                     OutputStream externalOutputStream = new FileOutputStream(externalDestinationFile)) {
+
+                    if (externalInputStream == null) {
+                        Log.d("FILEPICKER / DublicateFileToProjectFolder", "Failed to open external input stream.");
+                        Toast.makeText(this, "Failed to open external input stream.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    while ((length = externalInputStream.read(buffer)) > 0) {
+                        externalOutputStream.write(buffer, 0, length);
+                    }
+
+                    Toast.makeText(this, "File copied to " + externalDestinationFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+                    Log.d("FILEPICKER / DublicateFileToProjectFolder", "File copied to " + externalDestinationFile.getAbsolutePath());
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Toast.makeText(this, "Error copying file to external folder", Toast.LENGTH_SHORT).show();
+                    Log.d("FILEPICKER / DublicateFileToProjectFolder", "Error copying file to external folder: " + e);
+                }
+
+            } else if (fileName.endsWith(".mp3") || fileName.endsWith(".wav") || fileName.endsWith(".ogg")) {
+                // Шлях до папки /storage/emulated/0/Documents/GenCoreLite/scripts/res/raw
+                File externalFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "GenCoreLite/scripts/res/raw");
+
+                // Перевірка чи існує папка
+                if (!externalFolder.exists()) {
+                    boolean folderCreated = externalFolder.mkdirs();
+                    if (!folderCreated) {
+                        Log.d("FILEPICKER / DublicateFileToProjectFolder", "Failed to create external folder.");
+                        Toast.makeText(this, "Failed to create external folder.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }
+
+                // Перевірка чи файл вже існує в зовнішній папці
+                File externalDestinationFile = new File(externalFolder, fileName);
+                if (externalDestinationFile.exists()) {
+                    Log.d("FILEPICKER / DublicateFileToProjectFolder", "File already exists in the external folder.");
+                    Toast.makeText(this, "File already exists in the external folder.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Копіювання файлу в зовнішню папку
+                try (InputStream externalInputStream = getContentResolver().openInputStream(uri); // Новий InputStream
+                     OutputStream externalOutputStream = new FileOutputStream(externalDestinationFile)) {
+
+                    if (externalInputStream == null) {
+                        Log.d("FILEPICKER / DublicateFileToProjectFolder", "Failed to open external input stream.");
+                        Toast.makeText(this, "Failed to open external input stream.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    while ((length = externalInputStream.read(buffer)) > 0) {
+                        externalOutputStream.write(buffer, 0, length);
+                    }
+
+                    Toast.makeText(this, "File copied to " + externalDestinationFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+                    Log.d("FILEPICKER / DublicateFileToProjectFolder", "File copied to " + externalDestinationFile.getAbsolutePath());
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Toast.makeText(this, "Error copying file to external folder", Toast.LENGTH_SHORT).show();
+                    Log.d("FILEPICKER / DublicateFileToProjectFolder", "Error copying file to external folder: " + e);
+                }
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(this, "Error copying file", Toast.LENGTH_SHORT).show();
+            Log.d("FILEPICKER / DublicateFileToProjectFolder", "Error copying file: " + e);
+        }
+    }
+    private void copyFileToAssets(Uri uri, String fileName) {
+        String assetPath = "project/res/";
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".png")) {
+            assetPath += "drawable/";
+        } else if (fileName.endsWith(".mp3") || fileName.endsWith(".ogg") || fileName.endsWith(".wav")) {
+            assetPath += "raw/";
+        } else {
+            Log.d("FILEPICKER / copyFileToAssets", "Unsupported file type: " + fileName);
+            return;
+        }
+
+        // Повний шлях до папки assets
+        String fullAssetPath = assetPath + fileName;
+
+        try (InputStream inputStream = getContentResolver().openInputStream(uri);
+             OutputStream outputStream = openAssetOutputStream(fullAssetPath)) {
+
+            if (inputStream == null || outputStream == null) {
+                Log.d("FILEPICKER / copyFileToAssets", "Failed to open input or output stream.");
+                Toast.makeText(this, "Failed to copy file to assets.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+
+            Toast.makeText(this, "File copied to assets: " + fullAssetPath, Toast.LENGTH_SHORT).show();
+            Log.d("FILEPICKER / copyFileToAssets", "File copied to assets: " + fullAssetPath);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error copying file to assets", Toast.LENGTH_SHORT).show();
+            Log.d("FILEPICKER / copyFileToAssets", "Error copying file to assets: " + e);
         }
     }
 
+    private OutputStream openAssetOutputStream(String assetPath) throws IOException {
+        File assetsDir = new File(getApplicationInfo().dataDir, "assets");
+        if (!assetsDir.exists()) {
+            assetsDir.mkdirs();
+        }
 
+        File assetFile = new File(assetsDir, assetPath);
+        if (!assetFile.getParentFile().exists()) {
+            assetFile.getParentFile().mkdirs();
+        }
 
+        return new FileOutputStream(assetFile);
+    }
     private void openFilePicker() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.setType("*/*");

@@ -2,16 +2,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
-    <uses-permission android:name="com.termux.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="com.termux.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Дозволи для доступу до зовнішнього сховища -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!-- Дозволи для Termux -->
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+
+    <!-- Дозволи для інтернету та локації -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Запит на повний доступ до сховища (для Android 11+) -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
 
     <queries>
         <package android:name="com.termux" />
@@ -29,6 +34,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GenCoreLite"
         tools:targetApi="31">
+
         <activity
             android:name=".editor.FilePicker"
             android:exported="false" />
@@ -38,13 +44,13 @@
         <activity
             android:name=".editor.Editor"
             android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

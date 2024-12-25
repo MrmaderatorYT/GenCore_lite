@@ -112,6 +112,7 @@
             android:textAlignment="center"
             android:layout_centerInParent="true"/>
     </RelativeLayout>
+    <!--
     <Button
         android:id="@+id/first_btn"
         android:layout_centerInParent="true"
@@ -127,6 +128,6 @@
         android:text="Ні"
         android:layout_below="@id/first_btn"
         android:layout_height="wrap_content" />
-
+-->
 
 </RelativeLayout>

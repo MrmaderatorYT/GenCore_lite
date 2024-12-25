@@ -1,5 +1,6 @@
 package com.ccs.gencorelite;
 
+import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.DialogInterface;
@@ -22,7 +23,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.ccs.gencorelite.createProject.CreateFileAndFolder;
 import com.ccs.gencorelite.data.PreferenceConfig;
 import com.ccs.gencorelite.editor.Editor;
 
@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView newProject, loadProject, title, create, return_text, version;
     private EditText edit_name_new_pr, edit_package_new_pr, edit_version_new_pr;
-    private ImageView logo, schematic_logo;
+    private ImageView logo, schematic_logo, brand_logo;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -61,10 +61,17 @@ public class MainActivity extends AppCompatActivity {
         loadProject = findViewById(R.id.load_project);
         create = findViewById(R.id.create_text);
         return_text = findViewById(R.id.return_text);
+        brand_logo = findViewById(R.id.brand_logo);
+
+        hideAllElements();
+
+        // Запускаємо анімацію повороту на 360 градусів для brand_logo
+        startRotationAnimation();
 
         newProject.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.d("MAINACTIVITY / onCreate", "New project btn pressed");
                 edit_name_new_pr.setVisibility(View.VISIBLE);
                 edit_version_new_pr.setVisibility(View.VISIBLE);
                 edit_package_new_pr.setVisibility(View.VISIBLE);
@@ -83,6 +90,8 @@ public class MainActivity extends AppCompatActivity {
         return_text.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.d("MAINACTIVITY / onCreate", "return text pressed");
+
                 edit_name_new_pr.setVisibility(View.INVISIBLE);
                 edit_version_new_pr.setVisibility(View.INVISIBLE);
                 edit_package_new_pr.setVisibility(View.INVISIBLE);
@@ -99,6 +108,8 @@ public class MainActivity extends AppCompatActivity {
         loadProject.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.d("MAINACTIVITY / onCreate", "load project btn pressed");
+
                 showFolderDialog();
             }
         });
@@ -113,7 +124,38 @@ public class MainActivity extends AppCompatActivity {
                 PreferenceConfig.setTitle(getApplicationContext(), name_pr);
                 PreferenceConfig.setVersion(getApplicationContext(), version_pr);
 
-                createFileInProjectFolder(name_pr, "array.txt", "ааа");
+                createFileInProjectFolder(name_pr, "messages.gc_l", "messages.gc_l");
+                createFileInProjectFolder(name_pr, "main_screen.gc_l",
+                        "SCENE MAIN\n" +
+                        "BACKGROUND hall.png\n" +
+                        "MUSIC intro.mp3\n" +
+                        "END");
+                createFileInProjectFolder(name_pr, "settings_screen.gc_l",
+                        "SCENE SETTINGS\n" +
+                        "BACKGROUND hall.png\n" +
+                        "MUSIC intro.mp3\n" +
+                        "END");
+                createFileInProjectFolder(name_pr, "colors.gc_l", "" +
+                        "COLOR : WHITE = #FFFFFF\n" +
+                        "COLOR : BLACK = #000000\n" +
+                        "COLOR : RED = #FF0000\n" +
+                        "COLOR : GREEN = #00FF00\n" +
+                        "COLOR : BLUE = #0000FF\n" +
+                        "COLOR : YELLOW = #FFFF00\n" +
+                        "COLOR : CYAN = #00FFFF\n" +
+                        "COLOR : MAGENTA = #FF00FF\n" +
+                        "COLOR : ORANGE = #FFA500\n" +
+                        "COLOR : PURPLE = #800080\n" +
+                        "COLOR : PINK = #FFC0CB\n" +
+                        "COLOR : GRAY = #808080\n" +
+                        "COLOR : SILVER = #C0C0C0\n" +
+                        "COLOR : MAROON = #800000\n" +
+                        "COLOR : OLIVE = #808000\n" +
+                        "COLOR : LIME = #00FF00\n" +
+                        "COLOR : TEAL = #008080\n" +
+                        "COLOR : NAVY = #000080\n" +
+                        "COLOR : AQUA = #00FFFF\n" +
+                        "COLOR : BEIGE = #F5F5DC");
 
                 Intent intent = new Intent(MainActivity.this, Editor.class);
                 startActivity(intent);
@@ -127,32 +169,90 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private void fadeInAnimation() {
-        // Сховати елемент перед початком анімації
-        logo.setAlpha(0f);
 
-        // Створюємо анімацію появи для myView
-        ObjectAnimator fadeIn = ObjectAnimator.ofFloat(logo, "alpha", 0f, 1f);
-        // Встановлюємо тривалість анімації (в мілісекундах)
-        fadeIn.setDuration(2500);
-        // Встановлюємо інтерполятор (швидкість зміни анімації)
-        fadeIn.setInterpolator(new AccelerateDecelerateInterpolator());
-        // Запускаємо анімацію
-        fadeIn.start();
+
+    private void startRotationAnimation() {
+        // Анімація повороту на 360 градусів для brand_logo
+        ObjectAnimator rotationAnimator = ObjectAnimator.ofFloat(brand_logo, "rotationY", 0f, 360f);
+        rotationAnimator.setDuration(2000); // Тривалість анімації
+        rotationAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
+
+        // Після завершення анімації повороту, приховуємо brand_logo і запускаємо fadeInAnimation
+        rotationAnimator.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                // Анімація починається
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                // Анімація завершена
+                brand_logo.setVisibility(View.INVISIBLE); // Приховуємо brand_logo
+                fadeInAnimation(); // Запускаємо fadeInAnimation для інших елементів
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                // Анімація скасована
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+                // Анімація повторюється
+            }
+        });
+
+        rotationAnimator.start();
     }
+
+    private void fadeInAnimation() {
+        // Показуємо всі елементи після завершення анімації
+        newProject.setVisibility(View.VISIBLE);
+        loadProject.setVisibility(View.VISIBLE);
+        title.setVisibility(View.VISIBLE);
+        version.setVisibility(View.VISIBLE);
+        logo.setVisibility(View.VISIBLE);
+
+        // Анімація появи для елементів
+        ObjectAnimator fadeIn = ObjectAnimator.ofFloat(title, "alpha", 0f, 1f);
+        fadeIn.setDuration(1000);
+        fadeIn.setInterpolator(new AccelerateDecelerateInterpolator());
+        fadeIn.start();
+
+        ObjectAnimator fadeIn2 = ObjectAnimator.ofFloat(newProject, "alpha", 0f, 1f);
+        fadeIn2.setDuration(1000);
+        fadeIn2.setInterpolator(new AccelerateDecelerateInterpolator());
+        fadeIn2.start();
+
+        ObjectAnimator fadeIn3 = ObjectAnimator.ofFloat(loadProject, "alpha", 0f, 1f);
+        fadeIn3.setDuration(1000);
+        fadeIn3.setInterpolator(new AccelerateDecelerateInterpolator());
+        fadeIn3.start();
+
+        ObjectAnimator fadeIn4 = ObjectAnimator.ofFloat(version, "alpha", 0f, 1f);
+        fadeIn4.setDuration(1000);
+        fadeIn4.setInterpolator(new AccelerateDecelerateInterpolator());
+        fadeIn4.start();
+    }
+    private void hideAllElements() {
+        newProject.setVisibility(View.INVISIBLE);
+        loadProject.setVisibility(View.INVISIBLE);
+        title.setVisibility(View.INVISIBLE);
+        create.setVisibility(View.INVISIBLE);
+        return_text.setVisibility(View.INVISIBLE);
+        version.setVisibility(View.INVISIBLE);
+        edit_name_new_pr.setVisibility(View.INVISIBLE);
+        logo.setVisibility(View.INVISIBLE);
+        edit_package_new_pr.setVisibility(View.INVISIBLE);
+        edit_version_new_pr.setVisibility(View.INVISIBLE);
+        schematic_logo.setVisibility(View.INVISIBLE);
+        brand_logo.setVisibility(View.VISIBLE); // Показуємо brand_logo для анімації
+    }
+
 
     @Override
     protected void onStart() {
         super.onStart();
-        fadeInAnimation();
-        CreateFileAndFolder.makeFolderSchema(getFilesDir()+"schema");
-        edit_name_new_pr.setVisibility(View.INVISIBLE);
-        edit_version_new_pr.setVisibility(View.INVISIBLE);
-        edit_package_new_pr.setVisibility(View.INVISIBLE);
-        schematic_logo.setVisibility(View.INVISIBLE);
-        return_text.setVisibility(View.INVISIBLE);
-        return_text.setVisibility(View.INVISIBLE);
-        create.setVisibility(View.INVISIBLE);
     }
     private void createFileInProjectFolder(String folderName, String fileName, String data) {
         FileOutputStream fos = null;
@@ -170,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
 
             // Створення файлового виводу
             File file = new File(projectFolder, fileName);
-            Log.d("App", "Project folder: "+ projectFolder.toString());
+            Log.d("MAINACTIVITY / createFileInProjectFolder", "Project folder: "+ projectFolder);
             fos = new FileOutputStream(file);
             // Запис даних у файл
             fos.write(data.getBytes());
@@ -336,7 +436,7 @@ public class MainActivity extends AppCompatActivity {
         String folderStr = folder.toString();
         Log.d("App", "Dir: "+folderStr);
 
-        
+
 
         Intent intent = new Intent(MainActivity.this, Editor.class);
         startActivity(intent);

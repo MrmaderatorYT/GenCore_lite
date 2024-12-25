@@ -94,7 +94,10 @@ public class Editor extends AppCompatActivity {
                 // Викликати ваш метод кожні 10 секунд
                 saveData(title, "messages.gc_l", editor.getText().toString());
                 saveData(title, "colors.gc_l", editor.getText().toString());
-                System.out.println("Text of saved file: " + editor.getText().toString());
+                saveData(title, "main_screen.gc_l", editor.getText().toString());
+                saveData(title, "settings_screen.gc_l", editor.getText().toString());
+                Log.i("EDITOR / SaveData (calling in onCreate", "Text of saved file: [messages.gc_l]: "+editor.getText().toString());
+                Log.i("EDITOR / SaveData (calling in onCreate", "Text of saved file: [colors.gc_l]: "+editor.getText().toString());
             }
         };
 
@@ -104,7 +107,7 @@ public class Editor extends AppCompatActivity {
         compile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                rewriteData(getFilesDir()+"/Projects/"+title+"/"+title+"/message.gc_l");
+
                 AssetManager assetManager = getAssets();
                 InputStream inputStream = null;
                 File documentsDirectory = new File("/storage/emulated/0/Documents/GenCoreLite/scripts");
@@ -145,6 +148,9 @@ public class Editor extends AppCompatActivity {
                     throw new RuntimeException(e);
                 }
                 String sourceFilePath = "file:///android_asset/build_script.sh";
+                rewriteData(getFilesDir() + "/Projects/" + title + "/" + title + "/messages.gc_l");
+                rewriteDataInMain(getFilesDir() + "/Projects/" + title + "/" + title + "/main_screen.gc_l");
+                rewriteDataInSettings(getFilesDir() + "/Projects/" + title + "/" + title + "/settings_screen.gc_l");
 
                 PackageManager pm = Editor.this.getPackageManager();
                 Intent intent = pm.getLaunchIntentForPackage("com.termux");
@@ -199,7 +205,7 @@ public class Editor extends AppCompatActivity {
         });
 
         // Масив з назвами файлів (припустимо, що це ваш список файлів)
-        String[] files = {"messages.gc_l", "colors.gc_l"};
+        String[] files = {"messages.gc_l", "colors.gc_l", "main_screen.gc_l", "settings_screen.gc_l"};
 
         // Адаптер для списку файлів
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
@@ -221,6 +227,10 @@ public class Editor extends AppCompatActivity {
                     readFile(title, "messages.gc_l");
                 } else if (fileName.contains("colors.gc_l")) {
                     readFile(title, "colors.gc_l");
+                }else if(fileName.contains("main_screen.gc_l")){
+                    readFile(title, "main_screen.gc_l");
+                }else if(fileName.contains("settings_screen.gc_l")){
+                    readFile(title, "settings_screen");
                 }
             }
         });
@@ -268,7 +278,7 @@ public class Editor extends AppCompatActivity {
         StringBuilder sb = new StringBuilder();
         try {
             File file = new File(getFilesDir(), "Projects/" + folderName + "/" + folderName + "/" + fileName);
-            System.out.println(file.getAbsolutePath());
+            Log.d("EDITOR / ReadFile", file.getAbsolutePath());
             fis = new FileInputStream(file);
             // Вказуємо кодування UTF-8 при читанні файлу
             isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
@@ -278,6 +288,7 @@ public class Editor extends AppCompatActivity {
                 sb.append(line).append("\n");
             }
             System.out.println("Text of file: " + sb);
+            Log.i("EDITOR / ReadFile", "Text of file ["+fileName+"]" + sb);
             editor.setText(sb.toString());
 
         } catch (IOException e) {
@@ -309,6 +320,7 @@ public class Editor extends AppCompatActivity {
     }
 
     private void saveData(String title, String fileName, String data) {
+        Log.d("EDITOR / SaveData", "title: [ "+title + " ]");
         // перевіряємо, чи змінився текст
 
 
@@ -320,11 +332,11 @@ public class Editor extends AppCompatActivity {
                 File folder = new File(getFilesDir(), "Projects/" + title + "/" + title);
                 if (!folder.exists()) {
                     folder.mkdirs(); // Створення папки, якщо вона не існує
-                    Log.d("App", "Folder was created");
+                    Log.d("EDITOR / SaveData", "Folder [Projects] was created");
                 }
-                File file = new File(folder, fileName);
-                System.out.println(file.getAbsolutePath());
 
+                File file = new File(folder, fileName);
+                Log.d("EDITOR / SaveData", file.getAbsolutePath());
                 fos = new FileOutputStream(file);
                 // Вказуємо кодування UTF-8 при записі у файл
                 osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
@@ -335,6 +347,8 @@ public class Editor extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(Editor.this, "Data was saved successfully", Toast.LENGTH_SHORT).show();
+                        Log.d("EDITOR / SaveData", "Data was saved successfully");
+
                     }
                 });
             } catch (IOException e) {
@@ -345,6 +359,8 @@ public class Editor extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(Editor.this, "Trouble with saving data", Toast.LENGTH_SHORT).show();
+                        Log.d("EDITOR / SaveData", "Trouble with saving data");
+
                     }
                 });
             } finally {
@@ -366,7 +382,6 @@ public class Editor extends AppCompatActivity {
             previousText = data; // зберігаємо новий текст як попередній
         }
     }
-
 
 
     private void executeTermuxCommand() {
@@ -477,18 +492,16 @@ public class Editor extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("EDITOR / OnRequestPermissionsResult", "Permission granted");
                 runTermuxCommand();
             } else {
                 Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
+                Log.d("EDITOR / OnRequestPermissionsResult", "Permission denied");
             }
         }
     }
 
-
-
-
-
-
+    //копіювання файлів з папки assets в інше місце (в нашому коді - в папку Documents)
     public static void copyFileFromAssets(Context context, String assetFilePath, File destinationFile) {
         AssetManager assetManager = context.getAssets();
         try {
@@ -503,11 +516,12 @@ public class Editor extends AppCompatActivity {
 
             inputStream.close();
             outputStream.close();
-            Log.d("FileHelper", "File copied from assets to: " + destinationFile.getAbsolutePath());
+            Log.d("EDITOR / CopyFileFromAssets", "File copied from assets to: " + destinationFile.getAbsolutePath());
         } catch (IOException e) {
-            Log.e("FileHelper", "Error copying file from assets: " + assetFilePath, e);
+            Log.e("EDITOR / CopyFileFromAssets", "Error copying file from assets: " + assetFilePath, e);
         }
     }
+
     public static void copyAssets(Context context, String assetDir, String targetDir) throws IOException {
         AssetManager assetManager = context.getAssets();
         String[] files = assetManager.list(assetDir);
@@ -604,33 +618,57 @@ public class Editor extends AppCompatActivity {
         }
         return fileName;
     }
+
     private String getDestinationFolderPath(Uri uri) {
         String mimeType = getContentResolver().getType(uri);
         if (mimeType != null) {
             if (mimeType.startsWith("image/")) {
-                return "/storage/emulated/0/Documents/GenCoreLite/"+title+"/images";
+                return "/storage/emulated/0/Documents/GenCoreLite/" + title + "/images";
             } else if (mimeType.startsWith("audio/")) {
-                return "/storage/emulated/0/Documents/GenCoreLite/"+title+"/raw";
+                return "/storage/emulated/0/Documents/GenCoreLite/" + title + "/raw";
             }
         }
         return "/storage/emulated/0/Download/GenCoreLite"; // Папка за замовчуванням
     }
+
     private void rewriteData(String inputFilePath) {
-        Rewriter rewriter = new Rewriter();
-
         // Шляхи до вхідного та вихідного файлів
-        String inputPath = inputFilePath;
-        String outputPath ="storage/emulated/0/Documents/scripts/com/ccs/Game_First_Activity.java"; // Шлях до вихідного файлу
-
+        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/Game_First_Activity.java"; // Шлях до вихідного файлу
+        Log.d("EDITOR / RewriteData", "Output path: ["+outputPath+"]");
+        Log.d("EDITOR / RewriteData", "Input path: ["+inputFilePath+"]");
         // Переконайтеся, що директорія вихідного файлу існує
-        File outputDir = new File(getFilesDir(), "output");
+        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/");
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
 
-        // Виклик нативного методу
-        rewriter.generateScript(inputPath, outputPath);
+        // Виклик AsyncTask для виконання операцій у фоновому потоці
+        new Rewriter.FileOperationTask(inputFilePath, outputPath).execute();
+    }private void rewriteDataInMain(String inputFilePath) {
+        // Шляхи до вхідного та вихідного файлів
+        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/MainActivity.java"; // Шлях до вихідного файлу
+        Log.d("EDITOR / RewriteData", "Output path: ["+outputPath+"]");
+        Log.d("EDITOR / RewriteData", "Input path: ["+inputFilePath+"]");
+        // Переконайтеся, що директорія вихідного файлу існує
+        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/");
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
 
-        // Можливо, вам потрібно скопіювати згенерований файл до папки assets або інше місце
+        // Виклик AsyncTask для виконання операцій у фоновому потоці
+        new Rewriter.FileOperationTask(inputFilePath, outputPath).execute();
+    }private void rewriteDataInSettings(String inputFilePath) {
+        // Шляхи до вхідного та вихідного файлів
+        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/Settings.java"; // Шлях до вихідного файлу
+        Log.d("EDITOR / RewriteData", "Output path: ["+outputPath+"]");
+        Log.d("EDITOR / RewriteData", "Input path: ["+inputFilePath+"]");
+        // Переконайтеся, що директорія вихідного файлу існує
+        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/");
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+
+        // Виклик AsyncTask для виконання операцій у фоновому потоці
+        new Rewriter.FileOperationTask(inputFilePath, outputPath).execute();
     }
 }
