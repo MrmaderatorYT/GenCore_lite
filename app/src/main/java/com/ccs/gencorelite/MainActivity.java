@@ -116,51 +116,66 @@ public class MainActivity extends AppCompatActivity {
         create.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String name_pr = edit_name_new_pr.getText().toString();
-                String package_pr = edit_package_new_pr.getText().toString();
-                String version_pr = edit_version_new_pr.getText().toString();
+                String name = PreferenceConfig.getTitle(MainActivity.this);
+                if (!name.isEmpty()) {
+                    // Створення діалогового вікна
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setTitle("Sorry"); // Заголовок вікна
+                    builder.setMessage("In version 0.1 OEAP, creating multiple projects is not available.\nPlease wait for new updates.");
+                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Дія при натисканні кнопки "OK"
+                            dialog.dismiss(); // Закрити діалогове вікно
+                        }
+                    });
+                    builder.create().show(); // Показати діалогове вікно
+                }else {
+                    String name_pr = edit_name_new_pr.getText().toString();
+                    String package_pr = edit_package_new_pr.getText().toString();
+                    String version_pr = edit_version_new_pr.getText().toString();
 
-                PreferenceConfig.setPackage(getApplicationContext(), package_pr);
-                PreferenceConfig.setTitle(getApplicationContext(), name_pr);
-                PreferenceConfig.setVersion(getApplicationContext(), version_pr);
+                    PreferenceConfig.setPackage(getApplicationContext(), package_pr);
+                    PreferenceConfig.setTitle(getApplicationContext(), name_pr);
+                    PreferenceConfig.setVersion(getApplicationContext(), version_pr);
 
-                createFileInProjectFolder(name_pr, "messages.gc_l", "messages.gc_l");
-                createFileInProjectFolder(name_pr, "main_screen.gc_l",
-                        "SCENE MAIN\n" +
-                        "BACKGROUND hall.png\n" +
-                        "MUSIC intro.mp3\n" +
-                        "END");
-                createFileInProjectFolder(name_pr, "settings_screen.gc_l",
-                        "SCENE SETTINGS\n" +
-                        "BACKGROUND hall.png\n" +
-                        "MUSIC intro.mp3\n" +
-                        "END");
-                createFileInProjectFolder(name_pr, "colors.gc_l", "" +
-                        "COLOR : WHITE = #FFFFFF\n" +
-                        "COLOR : BLACK = #000000\n" +
-                        "COLOR : RED = #FF0000\n" +
-                        "COLOR : GREEN = #00FF00\n" +
-                        "COLOR : BLUE = #0000FF\n" +
-                        "COLOR : YELLOW = #FFFF00\n" +
-                        "COLOR : CYAN = #00FFFF\n" +
-                        "COLOR : MAGENTA = #FF00FF\n" +
-                        "COLOR : ORANGE = #FFA500\n" +
-                        "COLOR : PURPLE = #800080\n" +
-                        "COLOR : PINK = #FFC0CB\n" +
-                        "COLOR : GRAY = #808080\n" +
-                        "COLOR : SILVER = #C0C0C0\n" +
-                        "COLOR : MAROON = #800000\n" +
-                        "COLOR : OLIVE = #808000\n" +
-                        "COLOR : LIME = #00FF00\n" +
-                        "COLOR : TEAL = #008080\n" +
-                        "COLOR : NAVY = #000080\n" +
-                        "COLOR : AQUA = #00FFFF\n" +
-                        "COLOR : BEIGE = #F5F5DC");
+                    createFileInProjectFolder(name_pr, "messages.gc_l", "messages.gc_l");
+                    createFileInProjectFolder(name_pr, "main_screen.gc_l",
+                            "SCENE MAIN\n" +
+                                    "BACKGROUND hall.png\n" +
+                                    "MUSIC intro.mp3\n" +
+                                    "END");
+                    createFileInProjectFolder(name_pr, "settings_screen.gc_l",
+                            "SCENE SETTINGS\n" +
+                                    "BACKGROUND hall.png\n" +
+                                    "MUSIC intro.mp3\n" +
+                                    "END");
+                    createFileInProjectFolder(name_pr, "colors.gc_l", "" +
+                            "COLOR : WHITE = #FFFFFF\n" +
+                            "COLOR : BLACK = #000000\n" +
+                            "COLOR : RED = #FF0000\n" +
+                            "COLOR : GREEN = #00FF00\n" +
+                            "COLOR : BLUE = #0000FF\n" +
+                            "COLOR : YELLOW = #FFFF00\n" +
+                            "COLOR : CYAN = #00FFFF\n" +
+                            "COLOR : MAGENTA = #FF00FF\n" +
+                            "COLOR : ORANGE = #FFA500\n" +
+                            "COLOR : PURPLE = #800080\n" +
+                            "COLOR : PINK = #FFC0CB\n" +
+                            "COLOR : GRAY = #808080\n" +
+                            "COLOR : SILVER = #C0C0C0\n" +
+                            "COLOR : MAROON = #800000\n" +
+                            "COLOR : OLIVE = #808000\n" +
+                            "COLOR : LIME = #00FF00\n" +
+                            "COLOR : TEAL = #008080\n" +
+                            "COLOR : NAVY = #000080\n" +
+                            "COLOR : AQUA = #00FFFF\n" +
+                            "COLOR : BEIGE = #F5F5DC");
 
-                Intent intent = new Intent(MainActivity.this, Editor.class);
-                startActivity(intent);
-                overridePendingTransition(0, 0);
-
+                    Intent intent = new Intent(MainActivity.this, Editor.class);
+                    startActivity(intent);
+                    overridePendingTransition(0, 0);
+                }
             }
         });
 

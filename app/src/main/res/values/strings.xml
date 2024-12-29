@@ -10,5 +10,8 @@
     <string name="package_name">Package name (org.example)</string>
     <string name="version">Version</string>
     <string name="create">Create</string>
+    <string name="title_activity_docs">Docs_Activity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
 
 </resources>

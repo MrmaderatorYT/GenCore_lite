@@ -31,6 +31,7 @@ import com.ccs.gencorelite.data.adapters.FileAdapter;
 import com.ccs.gencorelite.data.items.FileItem;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -287,6 +288,11 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
             Toast.makeText(this, "File copied to " + destinationFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
             Log.d("FILEPICKER / DublicateFileToProjectFolder", "File copied to " + destinationFile.getAbsolutePath());
 
+            // Якщо це логотип, копіюємо його у папки mipmap-*dpi у зовнішньому сховищі
+            if (fileName.equals("ic_launcher.png")) {
+                copyToMipmapFoldersInExternalStorage(destinationFile);
+            }
+
             // Перевірка типу файлу
             if (fileName.endsWith(".jpg") || fileName.endsWith(".png")) {
                 // Шлях до папки /storage/emulated/0/Documents/GenCoreLite/scripts/res/drawable
@@ -383,6 +389,43 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
             e.printStackTrace();
             Toast.makeText(this, "Error copying file", Toast.LENGTH_SHORT).show();
             Log.d("FILEPICKER / DublicateFileToProjectFolder", "Error copying file: " + e);
+        }
+    }
+
+    private void copyToMipmapFoldersInExternalStorage(File sourceFile) {
+        // Масив папок mipmap-*dpi (без anydpi-v26, оскільки вони призначені для XML)
+        String[] mipmapFolders = {
+                "mipmap-hdpi",
+                "mipmap-mdpi",
+                "mipmap-xhdpi",
+                "mipmap-xxhdpi",
+                "mipmap-xxxhdpi"
+        };
+
+        // Шлях до папки /storage/emulated/0/Documents/GenCoreLite/scripts/res
+        File resFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "GenCoreLite/scripts/res");
+
+        for (String folder : mipmapFolders) {
+            File mipmapFolder = new File(resFolder, folder);
+            if (!mipmapFolder.exists()) {
+                mipmapFolder.mkdirs();
+            }
+
+            File destinationFile = new File(mipmapFolder, sourceFile.getName());
+            try (InputStream inputStream = new FileInputStream(sourceFile);
+                 OutputStream outputStream = new FileOutputStream(destinationFile)) {
+
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = inputStream.read(buffer)) > 0) {
+                    outputStream.write(buffer, 0, length);
+                }
+
+                Log.d("FILEPICKER / copyToMipmapFoldersInExternalStorage", "File copied to " + destinationFile.getAbsolutePath());
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.d("FILEPICKER / copyToMipmapFoldersInExternalStorage", "Error copying file to " + folder + ": " + e);
+            }
         }
     }
     private void copyFileToAssets(Uri uri, String fileName) {

@@ -21,7 +21,7 @@
 <main>
     GenCore Lite - is an app which can help with creating novel app for android OS.<br>
     To create new app you must press button "new" which open new page of application. On screen you should see 3 inputs:
-    <div id = "bg">
+    <div>
         name<br>
         package<br>
         version
@@ -29,7 +29,50 @@
     <b>name</b> is an app name which will displayed in name of app and in main page of novel.<br>
     <b>package</b> is name of app which can organise classes for every program in your phone. When you create new project we highly recommend to use new package name. In most cases package is your website wrote reverse like: <u>com.ccs</u>.<br>
     <b>version</b> is a designation of different variants of a program.
-</main>
+    <h3>Editor page</h3>
+    After creating a project, you will redirect to the editor screen.
+    In left side included four files which used for rewriting game screens.
+    <div>
+        <b>messages.gc_l</b> - main file which contains dialogs etc of novel.<br>
+        <b>colors.gc_l</b> - in nowadays is still not available.<br>
+        <b>main_screen.gc_l</b> - start screen of game.<br>
+        <b>settings_screen.gc_l</b> - settings screen of game
+    </div>
+    <h4>Script syntax</h4>
+    Game core has own script language which during compiling will be rewrote on Java code. All keywords which can help you with development of your own visual novel:
+    <div>
+        <b>SCENE</b> — marks the beginning of a new scene. Each scene has a unique number (e.g., SCENE 1, SCENE 2, etc.).<br>
+        <b>BACKGROUND</b> — specifies the image that will be used as the background for the current scene. For example, BACKGROUND hall.png means the background will be the image hall.png.<br>
+        <b>MUSIC</b> — specifies the music file that will play during the scene. For example, MUSIC intro.mp3 means the music from the file intro.mp3 will play.<br>
+        <b>DIALOG</b> — marks a dialogue between characters. After this keyword, the character’s name and their line are specified. For example, DIALOG John: Hello? means the character named John says, "Hello".<br>
+        <b>GOTO</b> — indicates a transition to another scene. For example, GOTO 2 means that after the current scene ends, the game will transition to Scene 2.<br>
+        <b>SOUND</b> — specifies a sound file that will play during the scene. For example, SOUND intro.wav means the sound from the file intro.wav will play.<br>
+        <b>END</b> — marks the end of the current scene. After this keyword, the scene concludes, and the game moves to the next scene or ends if it’s the final scene.
+    </div>
+    By the way game engine has a comments and reserved keywords which on 0.1 version play a role as a comments:
+    <b>#</b> - standard comment which will always still as a comment of code.<br>
+    <b>CHOICE</b> — represents a choice the player must make. After this keyword, a list of options is provided.
+    <!--For example, CHOICE Выберите действие: | Пойти направо | Пойти налево means the player can choose one of two actions: "Пойти направо" (Go right) or "Пойти налево" (Go left). -->
+    <h3>Example</h3>
+    <div>
+        SCENE 1<br>
+        BACKGROUND hall.png<br>
+        MUSIC intro.mp3<br>
+        DIALOG John: Hello<br>
+        GOTO 2<br>
+        END<br>
+        SCENE 2<br>
+        BACKGROUND hall.png<br>
+        DIALOG Alice: You came!<br>
+        SOUND intro.wav<br>
+        GOTO 3<br>
+        END<br>
+        SCENE 3<br>
+        BACKGROUND hall.png<br>
+        DIALOG John: Yes, so what will we do now?<br>
+        END<br><br>
+    </div>
+    </main>
 <footer>
     <p>
         &copy; 2024 CyberCraft Studio

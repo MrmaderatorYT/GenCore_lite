@@ -58,7 +58,7 @@ public class Editor extends AppCompatActivity {
     private EditText editor;
     private ImageView compile, add_file;
     private boolean isRunning = true;
-    private String title;
+    private String title, package_project;
     private String previousText = ""; // зберігаємо попередній текст
 
     //private final Handler handler;
@@ -69,6 +69,7 @@ public class Editor extends AppCompatActivity {
         setContentView(R.layout.activity_editor);
 
         title = PreferenceConfig.getTitle(this);
+        package_project = PreferenceConfig.getPackage(this);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -83,6 +84,7 @@ public class Editor extends AppCompatActivity {
         editor = findViewById(R.id.editor);
         compile = findViewById(R.id.compile);
         add_file = findViewById(R.id.add_new_file);
+        SyntaxHighlighter.applySyntaxHighlighting(editor);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
@@ -139,7 +141,7 @@ public class Editor extends AppCompatActivity {
                     copyFileFromAssets(Editor.this, "zipalign", zipalign);
                     copyFileFromAssets(Editor.this, "apksigner", apksigner);
                     copyFileFromAssets(Editor.this, "apksigner.jar", apksigner_jar);
-                    File destinationFolder = new File(getFilesDir(), "/storage/emulated/0/Documents/GenCoreLite/scripts");
+                    File destinationFolder = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/");
                     copyAssets(Editor.this, "project", "/storage/emulated/0/Documents/GenCoreLite/scripts");
                     copyAssets(Editor.this, "test", "/storage/emulated/0/Documents/GenCoreLite/scripts");
                     launchTermuxScript();

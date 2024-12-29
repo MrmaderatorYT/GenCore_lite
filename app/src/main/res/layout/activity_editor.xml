@@ -13,13 +13,20 @@
         android:layout_height="wrap_content"
         android:src="@drawable/ic_add"
         android:scaleType="fitXY"/>
-        <ImageView
+    <ImageView
         android:id="@+id/compile"
         android:layout_width="wrap_content"
-        android:layout_below="@id/add_new_file"
+        android:layout_below="@id/docs_btn"
         android:layout_height="wrap_content"
         android:src="@drawable/ic_done"
         android:scaleType="fitXY"/>
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/docs_btn"
+        android:src="@drawable/ic_book"
+        android:scaleType="fitXY"
+        android:layout_below="@+id/add_new_file" />
     </RelativeLayout>
     <!-- Список файлів -->
     <ListView
