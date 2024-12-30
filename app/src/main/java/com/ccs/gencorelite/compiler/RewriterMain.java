@@ -1,7 +1,10 @@
 package com.ccs.gencorelite.compiler;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
+
+import com.ccs.gencorelite.data.PreferenceConfig;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -51,7 +54,7 @@ public class RewriterMain {
             if (line.isEmpty() || line.startsWith("#") || line.startsWith("CHOICE")) continue; // Пропускаем пустые строки и комментарии
             Log.d("REWRITER / ParseScript", "Processing line: " + line);
 
-            if (line.startsWith("SCENE")) {
+            if (line.startsWith("SCENE MAIN")) {
                 // Новая сцена, сохраняем предыдущую (если есть)
                 if (!currentText.isEmpty()) {
                     entries.add(new Entry(currentBackground, currentMusic, currentSound, currentCharacter, currentText, currentChoices, nextScene));
@@ -82,10 +85,10 @@ public class RewriterMain {
     }
 
     // Метод для генерации Java кода
-    private static void generateJavaCode(List<Entry> entries, PrintWriter output) {
+    private static void generateJavaCode(List<Entry> entries, PrintWriter output, Context context) {
         Log.d("REWRITER / GenerateJavaCode", "Starting generating Java Code");
-
-        output.println("package com.ccs.romanticadventure;");
+        String package_project = PreferenceConfig.getPackage(context);
+        output.println("package " + package_project+";");
         output.println();
 
         output.println("import android.annotation.SuppressLint;");
@@ -101,8 +104,8 @@ public class RewriterMain {
         output.println();
         output.println("import android.app.Activity;");
         output.println();
-        output.println("import com.ccs.romanticadventure.data.PreferenceConfig;");
-        output.println("import com.ccs.romanticadventure.system.ExitConfirmationDialog;");
+        output.println("import "+package_project+".data.PreferenceConfig;");
+        output.println("import "+package_project+".system.ExitConfirmationDialog;");
         output.println();
         output.println("public class MainActivity extends Activity implements View.OnTouchListener {");
         output.println("    TextView startGame, settings, info, name;");
@@ -214,8 +217,6 @@ public class RewriterMain {
         output.println("                overridePendingTransition(0, 0);");
         output.println("                break;");
         output.println("            case R.id.info:");
-        output.println("                startActivity(new Intent(MainActivity.this, Info.class));");
-        output.println("                overridePendingTransition(0, 0);");
         output.println("                break;");
         output.println("        }");
         output.println("        return false;");
@@ -224,7 +225,7 @@ public class RewriterMain {
     }
 
     // Основная функция для чтения данных и генерации Java кода
-    public static void generateScript(String inputPath, String outputPath) throws IOException {
+    public static void generateScript(String inputPath, String outputPath, Context context) throws IOException {
         Log.d("REWRITER / GenerateScript", "Starting generating. Input path: [" + inputPath + "]");
         Log.d("REWRITER / GenerateScript", "Starting generating. Output path: [" + outputPath + "]");
 
@@ -241,7 +242,7 @@ public class RewriterMain {
 
         List<Entry> entries = new ArrayList<>();
         parseScript(scriptContent.toString(), entries);
-        generateJavaCode(entries, outputFile);
+        generateJavaCode(entries, outputFile, context);
 
         inputFile.close();
         outputFile.close();
@@ -253,16 +254,18 @@ public class RewriterMain {
     public static class FileOperationTask extends AsyncTask<Void, Void, Void> {
         private String inputPath;
         private String outputPath;
+        private Context context;
 
-        public FileOperationTask(String inputPath, String outputPath) {
+        public FileOperationTask(String inputPath, String outputPath, Context context) {
             this.inputPath = inputPath;
             this.outputPath = outputPath;
+            this.context = context;
         }
 
         @Override
         protected Void doInBackground(Void... voids) {
             try {
-                generateScript(inputPath, outputPath);
+                generateScript(inputPath, outputPath, context);
             } catch (IOException e) {
                 e.printStackTrace();
             }

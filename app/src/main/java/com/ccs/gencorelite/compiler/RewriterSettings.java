@@ -1,7 +1,13 @@
 package com.ccs.gencorelite.compiler;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
+
+import com.ccs.gencorelite.data.PreferenceConfig;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -11,7 +17,12 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RewriterSettings {
+public class RewriterSettings implements SharedPreferences.OnSharedPreferenceChangeListener {
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, @Nullable String key) {
+
+    }
 
     // Структура для хранения данных
     public static class Entry {
@@ -51,7 +62,7 @@ public class RewriterSettings {
             if (line.isEmpty() || line.startsWith("#") || line.startsWith("CHOICE")) continue; // Пропускаем пустые строки и комментарии
             Log.d("REWRITER / ParseScript", "Processing line: " + line);
 
-            if (line.startsWith("SCENE")) {
+            if (line.startsWith("SCENE SETTINGS")) {
                 // Новая сцена, сохраняем предыдущую (если есть)
                 if (!currentText.isEmpty()) {
                     entries.add(new Entry(currentBackground, currentMusic, currentSound, currentCharacter, currentText, currentChoices, nextScene));
@@ -82,149 +93,147 @@ public class RewriterSettings {
     }
 
     // Метод для генерации Java кода
-    private static void generateJavaCode(List<Entry> entries, PrintWriter output) {
+    private static void generateJavaCode(List<Entry> entries, PrintWriter output, Context context) {
         Log.d("REWRITER / GenerateJavaCode", "Starting generating Java Code");
-
-        output.println("package com.ccs.romanticadventure;");
+        String package_project = PreferenceConfig.getPackage(context);
+        output.println("package "+package_project+";");
         output.println();
-
         output.println("import android.annotation.SuppressLint;");
-        output.println("import android.content.Intent;");
+        output.println("import android.content.SharedPreferences;");
         output.println("import android.content.pm.ActivityInfo;");
         output.println("import android.media.MediaPlayer;");
         output.println("import android.os.Bundle;");
-        output.println("import android.view.MotionEvent;");
         output.println("import android.view.View;");
         output.println("import android.view.WindowManager;");
+        output.println("import android.widget.CompoundButton;");
+        output.println("import android.widget.SeekBar;");
+        output.println("import android.widget.Switch;");
         output.println("import android.widget.TextView;");
-        output.println("import android.widget.ImageView;");
         output.println();
         output.println("import android.app.Activity;");
         output.println();
-        output.println("import com.ccs.romanticadventure.data.PreferenceConfig;");
-        output.println("import com.ccs.romanticadventure.system.ExitConfirmationDialog;");
+        output.println("import "+package_project+".data.PreferenceConfig;");
         output.println();
-        output.println("public class MainActivity extends Activity implements View.OnTouchListener {");
-        output.println("    TextView startGame, settings, info, name;");
-        output.println("    MediaPlayer mp;");
-        output.println("    float volume;");
-        output.println("    ImageView backgroundImage;\n;");
+        output.println("public class Settings extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener, CompoundButton.OnCheckedChangeListener {");
         output.println();
-        output.println("    //метод, який створює екран");
+        output.println("    private MediaPlayer mediaPlayer;");
+        output.println("    private SeekBar seekBar;");
+        output.println("    private TextView volumeTextView, typeAnim;");
+        output.println("    float volumeLvl;");
+        output.println("    Switch switch_anim_value;");
+        output.println("    boolean type;");
+        output.println();
         output.println("    @SuppressLint(\"MissingInflatedId\")");
         output.println("    @Override");
         output.println("    protected void onCreate(Bundle savedInstanceState) {");
         output.println("        super.onCreate(savedInstanceState);");
-        output.println("        setContentView(R.layout.activity_main);");
+        output.println("        setContentView(R.layout.activity_settings);");
         output.println("        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE);");
         output.println("        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);");
+        output.println("        volumeLvl = PreferenceConfig.getVolumeLevel(this);");
+        output.println("        type = PreferenceConfig.getAnimSwitchValue(this);");
+        output.println("        mediaPlayer = MediaPlayer.create(this, R.raw.intro);");
+        output.println("        mediaPlayer.setLooping(true);");
+        output.println("        mediaPlayer.start();");
+        output.println("        mediaPlayer.setVolume(volumeLvl, volumeLvl);");
+        output.println("        switch_anim_value = findViewById(R.id.switch_anim);");
+        output.println("        typeAnim = findViewById(R.id.type_anim_value_text);");
+        output.println("        seekBar = findViewById(R.id.volume_set);");
+        output.println("        volumeTextView = findViewById(R.id.volume_text);");
+        output.println();
         output.println("        View decorView = getWindow().getDecorView();");
         output.println("        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN;");
         output.println("        decorView.setSystemUiVisibility(uiOptions);");
         output.println();
-        output.println("        //фіксуємо орієнтацію яка не зміниться (альбомна)");
-        output.println("        info = findViewById(R.id.info);");
-        output.println("        settings = findViewById(R.id.settings);");
-        output.println("        startGame = findViewById(R.id.startBtn);");
-        output.println("        name = findViewById(R.id.title);");
-        output.println("        backgroundImage = findViewById(R.id.background);");
-
-        output.println("        //завантажуємо дані, які нам потрібно");
+        output.println("        if (type) {");
+        output.println("            switch_anim_value.setChecked(true);");
+        output.println("            volumeTextView.setText(R.string.auto);");
+        output.println("        } else {");
+        output.println("            switch_anim_value.setChecked(false);");
+        output.println("            volumeTextView.setText(R.string.touching);");
+        output.println("        }");
         output.println("    }");
         output.println();
-        output.println("    //Метод який завжди виконується при старті програми");
-        output.println("    @SuppressLint(\"ClickableViewAccessibility\")");
-        output.println("    @Override");
-        output.println("    protected void onStart() {");
-        output.println("        super.onStart();");
-        output.println("        volume = PreferenceConfig.getVolumeLevel(this);");
-        output.println("        startGame.setOnTouchListener(MainActivity.this);");
-        output.println("        settings.setOnTouchListener(this);");
-        output.println("        info.setOnTouchListener(this);");
-        output.println("        //створюємо пісню, яка буде нескінченною");
-        output.println("        //і запускаємо");
-        output.println("        mp = MediaPlayer.create(this, R.raw.intro);");
-        output.println("        mp.setLooping(true);");
-        output.println("        mp.setVolume(volume, volume);");
-        output.println("        mp.start();");
+        output.println("    private void initializeSeekBar() {");
+        output.println("        seekBar.setMax(100);");
+        output.println("        seekBar.setProgress((int) (volumeLvl * 100));");
+        output.println("        System.out.println(\"ініціалізація\" + (int) volumeLvl);");
         output.println();
-        output.println("        // Встановлюємо фон та музику згідно з даними з файлу");
-        output.println("        setBackgroundAndMusic();");
+        output.println("        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {");
+        output.println("            @Override");
+        output.println("            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {");
+        output.println("                volumeLvl = (float) progress / 100;");
+        output.println("                System.out.println(\"aaaaaaaaaaaaaaaaaaaaa\" + volumeLvl);");
+        output.println("                updateVolume();");
+        output.println("                PreferenceConfig.setVolumeLevel(getApplicationContext(), volumeLvl);");
+        output.println("            }");
+        output.println();
+        output.println("            @Override");
+        output.println("            public void onStartTrackingTouch(SeekBar seekBar) {");
+        output.println("            }");
+        output.println();
+        output.println("            @Override");
+        output.println("            public void onStopTrackingTouch(SeekBar seekBar) {");
+        output.println("                PreferenceConfig.setVolumeLevel(getApplicationContext(), volumeLvl);");
+        output.println("            }");
+        output.println("        });");
         output.println("    }");
         output.println();
-        output.println("    private void setBackgroundAndMusic() {");
-        output.println("        // Тут встановлюємо фон та музику згідно з даними з файлу");
-        for (Entry entry : entries) {
-            if (!entry.background.isEmpty()) {
-                output.println("        backgroundImage.setBackgroundResource(R.drawable." + entry.background + ");");
-            }
-            if (!entry.music.isEmpty()) {
-                output.println("        mp = MediaPlayer.create(this, R.raw." + entry.music + ");");
-                output.println("        mp.setLooping(true);");
-                output.println("        mp.setVolume(volume, volume);");
-                output.println("        mp.start();");
-            }
-            if(!entry.text.isEmpty()){
-                output.println("        name.setText("+entry.text+");");
-            }
-        }
-        output.println("    }");
-        output.println();
-        output.println("    private void preferences() {");
-        output.println("        volume = PreferenceConfig.getVolumeLevel(this);");
-        output.println("    }");
-        output.println();
-        output.println("    @Override");
-        output.println("    public void onBackPressed() {");
-        output.println("        ExitConfirmationDialog.showExitConfirmationDialog(this);");
-        output.println("    }");
-        output.println();
-        output.println("    public void exit() {");
-        output.println("        finish(); // завершення актівіті");
-        output.println("    }");
-        output.println();
-        output.println("    @Override");
-        output.println("    protected void onPause() {");
-        output.println("        super.onPause();");
-        output.println("        releaseMediaPlayer();");
+        output.println("    private void updateVolume() {");
+        output.println("        mediaPlayer.setVolume(volumeLvl, volumeLvl);");
+        output.println("        volumeTextView.setText(\"Гучність: \" + (int) (volumeLvl * 100) + \"%\");");
         output.println("    }");
         output.println();
         output.println("    @Override");
         output.println("    protected void onDestroy() {");
         output.println("        super.onDestroy();");
-        output.println("        releaseMediaPlayer();");
+        output.println("        mediaPlayer.release();");
         output.println("    }");
         output.println();
-        output.println("    private void releaseMediaPlayer() {");
-        output.println("        if (mp != null) {");
-        output.println("            mp.release();");
-        output.println("            mp = null;");
+        output.println("    @Override");
+        output.println("    protected void onPause() {");
+        output.println("        super.onPause();");
+        output.println("        mediaPlayer.release();");
+        output.println("    }");
+        output.println();
+        output.println("    @Override");
+        output.println("    public void onBackPressed() {");
+        output.println("        super.onBackPressed();");
+        output.println("        PreferenceConfig.setVolumeLevel(getApplicationContext(), volumeLvl);");
+        output.println("        finish();");
+        output.println("        overridePendingTransition(0, 0);");
+        output.println("    }");
+        output.println();
+        output.println("    @Override");
+        output.println("    protected void onStart() {");
+        output.println("        super.onStart();");
+        output.println("        initializeSeekBar();");
+        output.println("        updateVolume();");
+        output.println("        if (switch_anim_value != null) {");
+        output.println("            switch_anim_value.setOnCheckedChangeListener((CompoundButton.OnCheckedChangeListener) this);");
         output.println("        }");
         output.println("    }");
         output.println();
         output.println("    @Override");
-        output.println("    public boolean onTouch(View v, MotionEvent event) {");
-        output.println("        switch (v.getId()) {");
-        output.println("            case R.id.startBtn:");
-        output.println("                startActivity(new Intent(MainActivity.this, Game_First_Activity.class));");
-        output.println("                overridePendingTransition(0, 0);");
-        output.println("                break;");
-        output.println("            case R.id.settings:");
-        output.println("                startActivity(new Intent(MainActivity.this, Settings.class));");
-        output.println("                overridePendingTransition(0, 0);");
-        output.println("                break;");
-        output.println("            case R.id.info:");
-        output.println("                startActivity(new Intent(MainActivity.this, Info.class));");
-        output.println("                overridePendingTransition(0, 0);");
-        output.println("                break;");
+        output.println("    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {");
+        output.println("        volumeLvl = PreferenceConfig.getVolumeLevel(this);");
+        output.println("    }");
+        output.println();
+        output.println("    @Override");
+        output.println("    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {");
+        output.println("        if (isChecked) {");
+        output.println("            type = true;");
+        output.println("            PreferenceConfig.setAnimSwitchValue(getApplicationContext(), type);");
+        output.println("        } else {");
+        output.println("            type = false;");
+        output.println("            PreferenceConfig.setAnimSwitchValue(getApplicationContext(), type);");
         output.println("        }");
-        output.println("        return false;");
         output.println("    }");
         output.println("}");
     }
 
     // Основная функция для чтения данных и генерации Java кода
-    public static void generateScript(String inputPath, String outputPath) throws IOException {
+    public static void generateScript(String inputPath, String outputPath, Context context) throws IOException {
         Log.d("REWRITER / GenerateScript", "Starting generating. Input path: [" + inputPath + "]");
         Log.d("REWRITER / GenerateScript", "Starting generating. Output path: [" + outputPath + "]");
 
@@ -241,7 +250,7 @@ public class RewriterSettings {
 
         List<Entry> entries = new ArrayList<>();
         parseScript(scriptContent.toString(), entries);
-        generateJavaCode(entries, outputFile);
+        generateJavaCode(entries, outputFile, context);
 
         inputFile.close();
         outputFile.close();
@@ -253,16 +262,19 @@ public class RewriterSettings {
     public static class FileOperationTask extends AsyncTask<Void, Void, Void> {
         private String inputPath;
         private String outputPath;
+        private Context context;
 
-        public FileOperationTask(String inputPath, String outputPath) {
+
+        public FileOperationTask(String inputPath, String outputPath, Context context) {
             this.inputPath = inputPath;
             this.outputPath = outputPath;
+            this.context = context;
         }
 
         @Override
         protected Void doInBackground(Void... voids) {
             try {
-                generateScript(inputPath, outputPath);
+                generateScript(inputPath, outputPath, context);
             } catch (IOException e) {
                 e.printStackTrace();
             }

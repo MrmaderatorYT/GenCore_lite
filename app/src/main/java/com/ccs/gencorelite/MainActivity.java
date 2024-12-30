@@ -139,7 +139,29 @@ public class MainActivity extends AppCompatActivity {
                     PreferenceConfig.setTitle(getApplicationContext(), name_pr);
                     PreferenceConfig.setVersion(getApplicationContext(), version_pr);
 
-                    createFileInProjectFolder(name_pr, "messages.gc_l", "messages.gc_l");
+                    createFileInProjectFolder(name_pr, "messages.gc_l", "" +
+                            "SCENE 1\n" +
+                            "BACKGROUND hall.png\n" +
+                            "MUSIC intro.mp3\n" +
+                            "DIALOG John: Привет, как дела?\n" +
+                            "CHOICE Выберите действие: | Пойти направо | Пойти налево\n" +
+                            "GOTO 2\n" +
+                            "END\n" +
+                            "SCENE 2\n" +
+                            "BACKGROUND hall.png\n" +
+                            "DIALOG Alice: Ты пришел!\n" +
+                            "SOUND intro.wav\n" +
+                            "GOTO 3\n" +
+                            "END\n" +
+                            "SCENE 3\n" +
+                            "BACKGROUND hall.png\n" +
+                            "DIALOG John: Что будем делать дальше?\n" +
+                            "CHOICE Выберите действие: | Пойти спать | Остаться\n" +
+                            "END\n" +
+                            "SCENE 4\n" +
+                            "BACKGROUND hall.png\n" +
+                            "DIALOG John: Что будем делать дальше?\n" +
+                            "END");
                     createFileInProjectFolder(name_pr, "main_screen.gc_l",
                             "SCENE MAIN\n" +
                                     "BACKGROUND hall.png\n" +
@@ -150,7 +172,8 @@ public class MainActivity extends AppCompatActivity {
                                     "BACKGROUND hall.png\n" +
                                     "MUSIC intro.mp3\n" +
                                     "END");
-                    createFileInProjectFolder(name_pr, "colors.gc_l", "" +
+                    createFileInProjectFolder(name_pr, "colors.gc_l",
+                            "#in 0.1 OEAP is not available to use this file\n"+
                             "COLOR : WHITE = #FFFFFF\n" +
                             "COLOR : BLACK = #000000\n" +
                             "COLOR : RED = #FF0000\n" +

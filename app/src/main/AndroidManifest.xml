@@ -32,12 +32,6 @@
             android:name=".editor.DocsActivity"
             android:exported="false" />
         <activity
-            android:name=".editor.Docs_Activity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
-            android:exported="false"
-            android:label="@string/title_activity_docs"
-            android:theme="@style/Theme.GenCoreLite.Fullscreen" />
-        <activity
             android:name=".editor.FilePicker"
             android:exported="false" />
 

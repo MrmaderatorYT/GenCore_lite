@@ -31,12 +31,17 @@ import androidx.core.content.ContextCompat;
 
 import com.ccs.gencorelite.R;
 import com.ccs.gencorelite.compiler.Rewriter;
+import com.ccs.gencorelite.compiler.RewriterMain;
+import com.ccs.gencorelite.compiler.RewriterConstClasses;
+import com.ccs.gencorelite.compiler.RewriterSettings;
 import com.ccs.gencorelite.data.PreferenceConfig;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,7 +61,7 @@ public class Editor extends AppCompatActivity {
     private ListView fileList;
 
     private EditText editor;
-    private ImageView compile, add_file;
+    private ImageView compile, add_file, docs;
     private boolean isRunning = true;
     private String title, package_project;
     private String previousText = ""; // зберігаємо попередній текст
@@ -85,7 +90,7 @@ public class Editor extends AppCompatActivity {
         compile = findViewById(R.id.compile);
         add_file = findViewById(R.id.add_new_file);
         SyntaxHighlighter.applySyntaxHighlighting(editor);
-
+        docs = findViewById(R.id.docs_btn);
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
         }
@@ -106,6 +111,14 @@ public class Editor extends AppCompatActivity {
         // Запускати завдання кожні 10 секунд (10000 мілісекунд)
         timer.schedule(task, 1, 10000);
 
+        docs.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Editor.this, DocsActivity.class);
+                startActivity(intent);
+                overridePendingTransition(0, 0);
+            }
+        });
         compile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -142,7 +155,8 @@ public class Editor extends AppCompatActivity {
                     copyFileFromAssets(Editor.this, "apksigner", apksigner);
                     copyFileFromAssets(Editor.this, "apksigner.jar", apksigner_jar);
                     File destinationFolder = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/");
-                    copyAssets(Editor.this, "project", "/storage/emulated/0/Documents/GenCoreLite/scripts");
+                    copyAssets(Editor.this, "project/res", "/storage/emulated/0/Documents/GenCoreLite/scripts/res");
+                    //copyAssets(Editor.this, "project", "/storage/emulated/0/Documents/GenCoreLite/scripts");
                     copyAssets(Editor.this, "test", "/storage/emulated/0/Documents/GenCoreLite/scripts");
                     launchTermuxScript();
 
@@ -153,6 +167,7 @@ public class Editor extends AppCompatActivity {
                 rewriteData(getFilesDir() + "/Projects/" + title + "/" + title + "/messages.gc_l");
                 rewriteDataInMain(getFilesDir() + "/Projects/" + title + "/" + title + "/main_screen.gc_l");
                 rewriteDataInSettings(getFilesDir() + "/Projects/" + title + "/" + title + "/settings_screen.gc_l");
+                rewriteConstFiles();
 
                 PackageManager pm = Editor.this.getPackageManager();
                 Intent intent = pm.getLaunchIntentForPackage("com.termux");
@@ -429,64 +444,64 @@ public class Editor extends AppCompatActivity {
     }
 
 
-    private void runTermuxCommand() {
-        try {
-            // Шлях до скопійованого скрипта
-            File scriptFile = new File(getExternalFilesDir(null), SCRIPT_NAME);
-
-            // Додати права на виконання скрипта
-            scriptFile.setExecutable(true);
-
-            // Параметри для скрипта
-            String appName = "MyApp";
-            String packageName = "com.example.myapp";
-            String mainActivity = "package org.example.myapp;\n" +
-                    "public class MainActivity extended AppCompatActivity{\n" +
-                    "@Override\n" +
-                    "protected void onCreate(Bundle savedInstanceState) {\n" +
-                    "super.onCreate(savedInstanceState);\n" +
-                    "setContentView(R.layout.activity_editor);\n" +
-                    "}\n" +
-                    "}";
-            String sourceDir = "src";
-            String buildDir = "build";
-            String outputDir = "/storage/emulated/0/Download/GenCoreLite";
-
-
-            // Команда для виконання скрипта з параметрами
-            String command = String.format(
-                    "sh %s %s %s %s %s %s %s",
-                    scriptFile.getAbsolutePath(), appName, packageName, mainActivity, sourceDir, buildDir, outputDir
-            );
-
-            // Виконати команду за допомогою ProcessBuilder
-            ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
-            processBuilder.redirectErrorStream(true);
-            Process process = processBuilder.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            StringBuilder output = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-            }
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                // Команда виконана успішно
-                String successMessage = "Command executed successfully:\n" + output.toString();
-                Log.d("CommandExecution", successMessage);
-                editor.setText(successMessage);
-            } else {
-                // Команда завершилася з помилкою
-                String errorMessage = "Command execution failed with exit code " + exitCode + ":\n" + output.toString();
-                Log.e("CommandExecution", errorMessage);
-                editor.setText(errorMessage);
-            }
-
-        } catch (Exception e) {
-            Log.e("CommandExecution", "Error running command", e);
-            Toast.makeText(this, "Error running command: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
+//    private void runTermuxCommand() {
+//        try {
+//            // Шлях до скопійованого скрипта
+//            File scriptFile = new File(getExternalFilesDir(null), SCRIPT_NAME);
+//
+//            // Додати права на виконання скрипта
+//            scriptFile.setExecutable(true);
+//
+//            // Параметри для скрипта
+//            String appName = "MyApp";
+//            String packageName = "com.example.myapp";
+//            String mainActivity = "package org.example.myapp;\n" +
+//                    "public class MainActivity extended AppCompatActivity{\n" +
+//                    "@Override\n" +
+//                    "protected void onCreate(Bundle savedInstanceState) {\n" +
+//                    "super.onCreate(savedInstanceState);\n" +
+//                    "setContentView(R.layout.activity_editor);\n" +
+//                    "}\n" +
+//                    "}";
+//            String sourceDir = "src";
+//            String buildDir = "build";
+//            String outputDir = "/storage/emulated/0/Download/GenCoreLite";
+//
+//
+//            // Команда для виконання скрипта з параметрами
+//            String command = String.format(
+//                    "sh %s %s %s %s %s %s %s",
+//                    scriptFile.getAbsolutePath(), appName, packageName, mainActivity, sourceDir, buildDir, outputDir
+//            );
+//
+//            // Виконати команду за допомогою ProcessBuilder
+//            ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
+//            processBuilder.redirectErrorStream(true);
+//            Process process = processBuilder.start();
+//            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+//            StringBuilder output = new StringBuilder();
+//            String line;
+//            while ((line = reader.readLine()) != null) {
+//                output.append(line).append("\n");
+//            }
+//            int exitCode = process.waitFor();
+//            if (exitCode == 0) {
+//                // Команда виконана успішно
+//                String successMessage = "Command executed successfully:\n" + output.toString();
+//                Log.d("CommandExecution", successMessage);
+//                editor.setText(successMessage);
+//            } else {
+//                // Команда завершилася з помилкою
+//                String errorMessage = "Command execution failed with exit code " + exitCode + ":\n" + output.toString();
+//                Log.e("CommandExecution", errorMessage);
+//                editor.setText(errorMessage);
+//            }
+//
+//        } catch (Exception e) {
+//            Log.e("CommandExecution", "Error running command", e);
+//            Toast.makeText(this, "Error running command: " + e.getMessage(), Toast.LENGTH_LONG).show();
+//        }
+//    }
 
 
     @Override
@@ -495,7 +510,7 @@ public class Editor extends AppCompatActivity {
         if (requestCode == REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d("EDITOR / OnRequestPermissionsResult", "Permission granted");
-                runTermuxCommand();
+                //runTermuxCommand();
             } else {
                 Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
                 Log.d("EDITOR / OnRequestPermissionsResult", "Permission denied");
@@ -634,43 +649,122 @@ public class Editor extends AppCompatActivity {
     }
 
     private void rewriteData(String inputFilePath) {
-        // Шляхи до вхідного та вихідного файлів
-        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/Game_First_Activity.java"; // Шлях до вихідного файлу
-        Log.d("EDITOR / RewriteData", "Output path: ["+outputPath+"]");
-        Log.d("EDITOR / RewriteData", "Input path: ["+inputFilePath+"]");
-        // Переконайтеся, що директорія вихідного файлу існує
-        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/");
+        String packagePath = package_project.replace('.', '/');
+        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/Game_First_Activity.java";
+        Log.d("EDITOR / RewriteData", "Output path: [" + outputPath + "]");
+        Log.d("EDITOR / RewriteData", "Input path: [" + inputFilePath + "]");
+        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/");
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
-
-        // Виклик AsyncTask для виконання операцій у фоновому потоці
-        new Rewriter.FileOperationTask(inputFilePath, outputPath).execute();
+        new Rewriter.FileOperationTask(inputFilePath, outputPath, getApplicationContext()).execute();
     }private void rewriteDataInMain(String inputFilePath) {
         // Шляхи до вхідного та вихідного файлів
-        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/MainActivity.java"; // Шлях до вихідного файлу
-        Log.d("EDITOR / RewriteData", "Output path: ["+outputPath+"]");
-        Log.d("EDITOR / RewriteData", "Input path: ["+inputFilePath+"]");
+        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/"+"MainActivity.java"; // Шлях до вихідного файлу
+        Log.d("EDITOR / RewriteDataInMain", "Output path: ["+outputPath+"]");
+        Log.d("EDITOR / RewriteDataInMain", "Input path: ["+inputFilePath+"]");
         // Переконайтеся, що директорія вихідного файлу існує
-        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/");
+        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/");
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
 
         // Виклик AsyncTask для виконання операцій у фоновому потоці
-        new Rewriter.FileOperationTask(inputFilePath, outputPath).execute();
-    }private void rewriteDataInSettings(String inputFilePath) {
+        new RewriterMain.FileOperationTask(inputFilePath, outputPath, getApplicationContext()).execute();
+    }
+    private void rewriteDataInSettings(String inputFilePath) {
         // Шляхи до вхідного та вихідного файлів
-        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/Settings.java"; // Шлях до вихідного файлу
-        Log.d("EDITOR / RewriteData", "Output path: ["+outputPath+"]");
-        Log.d("EDITOR / RewriteData", "Input path: ["+inputFilePath+"]");
+        String packagePath = package_project.replace('.', '/');
+        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/Settings.java";
+        Log.d("EDITOR / RewriteDataInSettings", "Input path: ["+inputFilePath+"]");
         // Переконайтеся, що директорія вихідного файлу існує
-        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/com/ccs/romanticadventure/");
+        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/");
+        Log.d("EDITOR / RewriteDataInSettings", "Output path: ["+outputPath+"]");
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
 
         // Виклик AsyncTask для виконання операцій у фоновому потоці
-        new Rewriter.FileOperationTask(inputFilePath, outputPath).execute();
+        new RewriterSettings.FileOperationTask(inputFilePath, outputPath, getApplicationContext()).execute();
+    }
+    private void rewriteConstFiles() {
+        String packagePath = package_project.replace('.', '/');
+        String manifestPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/AndroidManifest.xml";
+        String dataPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/data";
+        String systemPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/system";
+
+        // Переконайтеся, що директорія вихідного файлу існує
+        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/" + packagePath + "/");
+        Log.d("EDITOR / RewriteDataInManifest", "Output path: [" + manifestPath + "]");
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+
+        // Створення директорії для data
+        File dataDir = new File(dataPath);
+        if (!dataDir.exists()) {
+            boolean isDataDirCreated = dataDir.mkdirs();
+            if (isDataDirCreated) {
+                Log.d("EDITOR / RewriteDataInManifest", "Data directory created: [" + dataPath + "]");
+            } else {
+                Log.e("EDITOR / RewriteDataInManifest", "Failed to create data directory: [" + dataPath + "]");
+            }
+        }
+
+        // Створення директорії для system
+        File systemDir = new File(systemPath);
+        if (!systemDir.exists()) {
+            boolean isSystemDirCreated = systemDir.mkdirs();
+            if (isSystemDirCreated) {
+                Log.d("EDITOR / RewriteDataInManifest", "System directory created: [" + systemPath + "]");
+            } else {
+                Log.e("EDITOR / RewriteDataInManifest", "Failed to create system directory: [" + systemPath + "]");
+            }
+        }
+
+        // Перевірка, чи існує файл AndroidManifest.xml
+        File manifestFile = new File(manifestPath);
+        if (manifestFile.exists()) {
+            // Видалення старого файлу
+            boolean isDeleted = manifestFile.delete();
+            if (isDeleted) {
+                Log.d("EDITOR / RewriteDataInManifest", "Old AndroidManifest.xml deleted.");
+            } else {
+                Log.e("EDITOR / RewriteDataInManifest", "Failed to delete old AndroidManifest.xml.");
+            }
+        }
+
+        // Виклик AsyncTask для генерації маніфесту
+        new RewriterConstClasses.FileOperationTask(manifestPath, getApplicationContext()).execute();
+
+        // Перетворення інших файлів
+        RewriterConstClasses.rewriteExitConfirmationDialog(systemPath + "/ExitConfirmationDialog.java", package_project);
+        RewriterConstClasses.rewriteWebAppInterface(dataPath + "/WebAppInterface.java", package_project);
+        RewriterConstClasses.rewriteFileManager(dataPath + "/FileManager.java", package_project);
+        RewriterConstClasses.rewritePreferenceConfig(dataPath + "/PreferenceConfig.java", package_project);
+
+        Log.d("EDITOR / RewriteDataInManifest", "All files rewritten successfully.");
+    }
+
+    private void changePackageInFile(File file, String oldPackage, String newPackage) {
+        try {
+            // Читання вмісту файлу
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            StringBuilder content = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Заміна старого пакету на новий
+                line = line.replace(oldPackage, newPackage);
+                content.append(line).append("\n");
+            }
+            reader.close();
+
+            // Запис зміненого вмісту назад у файл
+            FileWriter writer = new FileWriter(file);
+            writer.write(content.toString());
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

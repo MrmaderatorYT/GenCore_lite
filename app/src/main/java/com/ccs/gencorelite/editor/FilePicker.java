@@ -48,7 +48,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
     private TextView fileSizeText;
     private TextView metadataText;
     private String projectFolderName;  // Ім'я проектної папки
-    private ImageView import_btn;
+    private ImageView import_btn, backBtn;
 
     private ImageButton musicToggleButton;
     private SeekBar musicSeekBar;
@@ -72,6 +72,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
 
         musicToggleButton = findViewById(R.id.music_toggle_button);
         musicSeekBar = findViewById(R.id.music_seek_bar);
+        backBtn = findViewById(R.id.back_btn);
 
 
         musicSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {

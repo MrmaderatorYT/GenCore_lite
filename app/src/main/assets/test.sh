@@ -16,7 +16,6 @@ set -e
 
 # Set directories and package names
 dir=/storage/emulated/0/Documents/GenCoreLite/scripts
-project_package=com/ccs
 output_dir=/storage/emulated/0/Documents/GenCoreLite/output
 
 echo "Work Dir: $dir"
@@ -39,6 +38,25 @@ export PATH="$BUILD_TOOLS:$PATH"
 # Clean up from the last build
 rm -rf build
 mkdir -p build/classes
+
+# Remove mipmap-anydpi-v26 and mipmap-anydpi-v33 folders if they exist
+echo "---------------Removing mipmap-anydpi-v26 and mipmap-anydpi-v33 folders: "
+mipmap_v26_dir="$dir/res/mipmap-anydpi-v26"
+mipmap_v33_dir="$dir/res/mipmap-anydpi-v33"
+
+if [ -d "$mipmap_v26_dir" ]; then
+  echo "Removing $mipmap_v26_dir"
+  rm -rf "$mipmap_v26_dir"
+else
+  echo "$mipmap_v26_dir does not exist, skipping..."
+fi
+
+if [ -d "$mipmap_v33_dir" ]; then
+  echo "Removing $mipmap_v33_dir"
+  rm -rf "$mipmap_v33_dir"
+else
+  echo "$mipmap_v33_dir does not exist, skipping..."
+fi
 
 # Compile resources with aapt2
 echo "---------------aapt2 compile: "
