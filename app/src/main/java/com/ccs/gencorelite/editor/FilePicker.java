@@ -236,7 +236,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
 
             // Конвертуємо розмір у мегабайти або гігабайти
             if (sizeInBytes < 1024 * 1024) {
-                return sizeInBytes + " Bytes"; // Якщо розмір менше 1 МБ, повертаємо в байтах
+                return sizeInBytes + " B"; // Якщо розмір менше 1 МБ, повертаємо в байтах
             } else if (sizeInBytes < 1024 * 1024 * 1024) {
                 double sizeInMB = sizeInBytes / (1024.0 * 1024.0);
                 return String.format("%.2f MB", sizeInMB); // Повертаємо в мегабайтах
@@ -245,7 +245,7 @@ public class FilePicker extends AppCompatActivity implements FileAdapter.OnFileC
                 return String.format("%.2f GB", sizeInGB); // Повертаємо в гігабайтах
             }
         }
-        return "0 Б"; // Якщо не вдалося отримати розмір
+        return "0 B"; // Якщо не вдалося отримати розмір
     }
 
     private void duplicateFileToProjectFolder(Uri uri, String fileName) {

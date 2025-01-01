@@ -247,7 +247,7 @@ public class Editor extends AppCompatActivity {
                 }else if(fileName.contains("main_screen.gc_l")){
                     readFile(title, "main_screen.gc_l");
                 }else if(fileName.contains("settings_screen.gc_l")){
-                    readFile(title, "settings_screen");
+                    readFile(title, "settings_screen.gc_l");
                 }
             }
         });

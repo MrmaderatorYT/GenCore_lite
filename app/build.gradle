@@ -33,7 +33,7 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdk 34
         versionCode 1
-        versionName "0.1"
+        versionName "0.1 OEAP"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
