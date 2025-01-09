@@ -472,7 +472,7 @@ public class MainActivity extends AppCompatActivity {
         // Отримуємо шлях до папки
         File folder = new File(getFilesDir(), "Projects" + File.separator + folderName);
         String folderStr = folder.toString();
-        Log.d("App", "Dir: "+folderStr);
+        Log.d("MAINACTIVITY / OpenFolder", "Dir: "+folderStr);
 
 
 
