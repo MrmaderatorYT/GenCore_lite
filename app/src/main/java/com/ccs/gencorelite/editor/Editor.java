@@ -31,8 +31,8 @@ import androidx.core.content.ContextCompat;
 
 import com.ccs.gencorelite.R;
 import com.ccs.gencorelite.compiler.Rewriter;
-import com.ccs.gencorelite.compiler.RewriterMain;
 import com.ccs.gencorelite.compiler.RewriterConstClasses;
+import com.ccs.gencorelite.compiler.RewriterMain;
 import com.ccs.gencorelite.compiler.RewriterSettings;
 import com.ccs.gencorelite.data.PreferenceConfig;
 
@@ -40,8 +40,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -50,6 +48,8 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Editor extends AppCompatActivity {
 
@@ -212,12 +212,7 @@ public class Editor extends AppCompatActivity {
                     // Якщо Termux не знайдено на пристрої
                     Toast.makeText(Editor.this, "Termux не знайдено на пристрої", Toast.LENGTH_SHORT).show();
                 }
-//                try {
-//                    copyScriptToStorage();
-//                    runTermuxCommand();
-//                } catch (Exception e) {
-//                    Log.e("TermuxCommand", "Error copying or running Termux command", e);
-//                }
+//
             }
         });
 
@@ -289,118 +284,51 @@ public class Editor extends AppCompatActivity {
     }
 
     private String readFile(String folderName, String fileName) {
-        FileInputStream fis = null;
-        InputStreamReader isr = null;
-        BufferedReader br = null;
         StringBuilder sb = new StringBuilder();
-        try {
-            File file = new File(getFilesDir(), "Projects/" + folderName + "/" + folderName + "/" + fileName);
-            Log.d("EDITOR / ReadFile", file.getAbsolutePath());
-            fis = new FileInputStream(file);
-            // Вказуємо кодування UTF-8 при читанні файлу
-            isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            br = new BufferedReader(isr);
+        File file = new File(getFilesDir(), "Projects/" + folderName + "/" + folderName + "/" + fileName);
+        Log.d("EDITOR / ReadFile", file.getAbsolutePath());
+
+        try (FileInputStream fis = new FileInputStream(file);
+             InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
+             BufferedReader br = new BufferedReader(isr)) {
             String line;
             while ((line = br.readLine()) != null) {
                 sb.append(line).append("\n");
             }
-            System.out.println("Text of file: " + sb);
-            Log.i("EDITOR / ReadFile", "Text of file ["+fileName+"]" + sb);
+            Log.i("EDITOR / ReadFile", "Text of file [" + fileName + "]: " + sb);
             editor.setText(sb.toString());
-
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (isr != null) {
-                try {
-                    isr.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
         return sb.toString();
     }
 
     private void saveData(String title, String fileName, String data) {
-        Log.d("EDITOR / SaveData", "title: [ "+title + " ]");
-        // перевіряємо, чи змінився текст
-
-
         if (!data.equals(previousText)) {
-            FileOutputStream fos = null;
-            OutputStreamWriter osw = null;
-            try {
-                // Отримання шляху до папки проєкту
-                File folder = new File(getFilesDir(), "Projects/" + title + "/" + title);
-                if (!folder.exists()) {
-                    folder.mkdirs(); // Створення папки, якщо вона не існує
-                    Log.d("EDITOR / SaveData", "Folder [Projects] was created");
-                }
+            File folder = new File(getFilesDir(), "Projects/" + title + "/" + title);
+            if (!folder.exists()) {
+                folder.mkdirs(); // Створення папки, якщо вона не існує
+            }
 
-                File file = new File(folder, fileName);
-                Log.d("EDITOR / SaveData", file.getAbsolutePath());
-                fos = new FileOutputStream(file);
-                // Вказуємо кодування UTF-8 при записі у файл
-                osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+            File file = new File(folder, fileName);
+            try (FileOutputStream fos = new FileOutputStream(file);
+                 OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
                 osw.write(data);
 
-                // Показати Toast на головному потоці
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(Editor.this, "Data was saved successfully", Toast.LENGTH_SHORT).show();
-                        Log.d("EDITOR / SaveData", "Data was saved successfully");
-
-                    }
+                runOnUiThread(() -> {
+                    Toast.makeText(Editor.this, "Data was saved successfully", Toast.LENGTH_SHORT).show();
+                    Log.d("EDITOR / SaveData", "Data was saved successfully");
                 });
             } catch (IOException e) {
                 e.printStackTrace();
-
-                // Показати Toast на головному потоці
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(Editor.this, "Trouble with saving data", Toast.LENGTH_SHORT).show();
-                        Log.d("EDITOR / SaveData", "Trouble with saving data");
-
-                    }
+                runOnUiThread(() -> {
+                    Toast.makeText(Editor.this, "Trouble with saving data", Toast.LENGTH_SHORT).show();
+                    Log.d("EDITOR / SaveData", "Trouble with saving data");
                 });
-            } finally {
-                if (osw != null) {
-                    try {
-                        osw.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                if (fos != null) {
-                    try {
-                        fos.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
             }
-            previousText = data; // зберігаємо новий текст як попередній
+            previousText = data; // Зберігаємо новий текст як попередній
         }
     }
-
-
     private void executeTermuxCommand() {
         try {
             Intent intent = new Intent("com.termux.RUN_COMMAND");
@@ -429,80 +357,7 @@ public class Editor extends AppCompatActivity {
         startService(intent);
 
 
-//        if (intent != null) {
-//            // Add the command to execute in Termux
-//            intent.putExtra("com.termux.RUN_COMMAND", "bash " + scriptPath);
-//            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-//
-//            // Launch Termux
-//            startActivity(intent);
-//        } else {
-//            // Handle the error
-//            // Termux is not installed
-//        }
     }
-
-
-//    private void runTermuxCommand() {
-//        try {
-//            // Шлях до скопійованого скрипта
-//            File scriptFile = new File(getExternalFilesDir(null), SCRIPT_NAME);
-//
-//            // Додати права на виконання скрипта
-//            scriptFile.setExecutable(true);
-//
-//            // Параметри для скрипта
-//            String appName = "MyApp";
-//            String packageName = "com.example.myapp";
-//            String mainActivity = "package org.example.myapp;\n" +
-//                    "public class MainActivity extended AppCompatActivity{\n" +
-//                    "@Override\n" +
-//                    "protected void onCreate(Bundle savedInstanceState) {\n" +
-//                    "super.onCreate(savedInstanceState);\n" +
-//                    "setContentView(R.layout.activity_editor);\n" +
-//                    "}\n" +
-//                    "}";
-//            String sourceDir = "src";
-//            String buildDir = "build";
-//            String outputDir = "/storage/emulated/0/Download/GenCoreLite";
-//
-//
-//            // Команда для виконання скрипта з параметрами
-//            String command = String.format(
-//                    "sh %s %s %s %s %s %s %s",
-//                    scriptFile.getAbsolutePath(), appName, packageName, mainActivity, sourceDir, buildDir, outputDir
-//            );
-//
-//            // Виконати команду за допомогою ProcessBuilder
-//            ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
-//            processBuilder.redirectErrorStream(true);
-//            Process process = processBuilder.start();
-//            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-//            StringBuilder output = new StringBuilder();
-//            String line;
-//            while ((line = reader.readLine()) != null) {
-//                output.append(line).append("\n");
-//            }
-//            int exitCode = process.waitFor();
-//            if (exitCode == 0) {
-//                // Команда виконана успішно
-//                String successMessage = "Command executed successfully:\n" + output.toString();
-//                Log.d("CommandExecution", successMessage);
-//                editor.setText(successMessage);
-//            } else {
-//                // Команда завершилася з помилкою
-//                String errorMessage = "Command execution failed with exit code " + exitCode + ":\n" + output.toString();
-//                Log.e("CommandExecution", errorMessage);
-//                editor.setText(errorMessage);
-//            }
-//
-//        } catch (Exception e) {
-//            Log.e("CommandExecution", "Error running command", e);
-//            Toast.makeText(this, "Error running command: " + e.getMessage(), Toast.LENGTH_LONG).show();
-//        }
-//    }
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -520,19 +375,13 @@ public class Editor extends AppCompatActivity {
 
     //копіювання файлів з папки assets в інше місце (в нашому коді - в папку Documents)
     public static void copyFileFromAssets(Context context, String assetFilePath, File destinationFile) {
-        AssetManager assetManager = context.getAssets();
-        try {
-            InputStream inputStream = assetManager.open(assetFilePath);
-            OutputStream outputStream = new FileOutputStream(destinationFile);
-
+        try (InputStream inputStream = context.getAssets().open(assetFilePath);
+             OutputStream outputStream = new FileOutputStream(destinationFile)) {
             byte[] buffer = new byte[1024];
             int length;
             while ((length = inputStream.read(buffer)) > 0) {
                 outputStream.write(buffer, 0, length);
             }
-
-            inputStream.close();
-            outputStream.close();
             Log.d("EDITOR / CopyFileFromAssets", "File copied from assets to: " + destinationFile.getAbsolutePath());
         } catch (IOException e) {
             Log.e("EDITOR / CopyFileFromAssets", "Error copying file from assets: " + assetFilePath, e);
@@ -651,14 +500,17 @@ public class Editor extends AppCompatActivity {
     private void rewriteData(String inputFilePath) {
         String packagePath = package_project.replace('.', '/');
         String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/Game_First_Activity.java";
-        Log.d("EDITOR / RewriteData", "Output path: [" + outputPath + "]");
-        Log.d("EDITOR / RewriteData", "Input path: [" + inputFilePath + "]");
         File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/");
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
-        new Rewriter.FileOperationTask(inputFilePath, outputPath, getApplicationContext()).execute();
-    }private void rewriteDataInMain(String inputFilePath) {
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            new Rewriter.FileOperationTask(inputFilePath, outputPath, getApplicationContext()).execute();
+        });
+    }
+    private void rewriteDataInMain(String inputFilePath) {
         // Шляхи до вхідного та вихідного файлів
         String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/"+"MainActivity.java"; // Шлях до вихідного файлу
         Log.d("EDITOR / RewriteDataInMain", "Output path: ["+outputPath+"]");
@@ -693,78 +545,35 @@ public class Editor extends AppCompatActivity {
         String dataPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/data";
         String systemPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/system";
 
-        // Переконайтеся, що директорія вихідного файлу існує
-        File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/" + packagePath + "/");
-        Log.d("EDITOR / RewriteDataInManifest", "Output path: [" + manifestPath + "]");
-        if (!outputDir.exists()) {
-            outputDir.mkdirs();
-        }
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            // Створення директорій
+            createDirectoryIfNotExists(dataPath);
+            createDirectoryIfNotExists(systemPath);
 
-        // Створення директорії для data
-        File dataDir = new File(dataPath);
-        if (!dataDir.exists()) {
-            boolean isDataDirCreated = dataDir.mkdirs();
-            if (isDataDirCreated) {
-                Log.d("EDITOR / RewriteDataInManifest", "Data directory created: [" + dataPath + "]");
-            } else {
-                Log.e("EDITOR / RewriteDataInManifest", "Failed to create data directory: [" + dataPath + "]");
-            }
-        }
-
-        // Створення директорії для system
-        File systemDir = new File(systemPath);
-        if (!systemDir.exists()) {
-            boolean isSystemDirCreated = systemDir.mkdirs();
-            if (isSystemDirCreated) {
-                Log.d("EDITOR / RewriteDataInManifest", "System directory created: [" + systemPath + "]");
-            } else {
-                Log.e("EDITOR / RewriteDataInManifest", "Failed to create system directory: [" + systemPath + "]");
-            }
-        }
-
-        // Перевірка, чи існує файл AndroidManifest.xml
-        File manifestFile = new File(manifestPath);
-        if (manifestFile.exists()) {
-            // Видалення старого файлу
-            boolean isDeleted = manifestFile.delete();
-            if (isDeleted) {
-                Log.d("EDITOR / RewriteDataInManifest", "Old AndroidManifest.xml deleted.");
-            } else {
+            // Видалення старого маніфесту
+            File manifestFile = new File(manifestPath);
+            if (manifestFile.exists() && !manifestFile.delete()) {
                 Log.e("EDITOR / RewriteDataInManifest", "Failed to delete old AndroidManifest.xml.");
             }
-        }
 
-        // Виклик AsyncTask для генерації маніфесту
-        new RewriterConstClasses.FileOperationTask(manifestPath, getApplicationContext()).execute();
+            // Генерація нового маніфесту
+            new RewriterConstClasses.FileOperationTask(manifestPath, getApplicationContext()).execute();
 
-        // Перетворення інших файлів
-        RewriterConstClasses.rewriteExitConfirmationDialog(systemPath + "/ExitConfirmationDialog.java", package_project);
-        RewriterConstClasses.rewriteWebAppInterface(dataPath + "/WebAppInterface.java", package_project);
-        RewriterConstClasses.rewriteFileManager(dataPath + "/FileManager.java", package_project);
-        RewriterConstClasses.rewritePreferenceConfig(dataPath + "/PreferenceConfig.java", package_project);
+            // Перетворення інших файлів
+            RewriterConstClasses.rewriteExitConfirmationDialog(systemPath + "/ExitConfirmationDialog.java", package_project);
+            RewriterConstClasses.rewriteWebAppInterface(dataPath + "/WebAppInterface.java", package_project);
+            RewriterConstClasses.rewriteFileManager(dataPath + "/FileManager.java", package_project);
+            RewriterConstClasses.rewritePreferenceConfig(dataPath + "/PreferenceConfig.java", package_project);
 
-        Log.d("EDITOR / RewriteDataInManifest", "All files rewritten successfully.");
+            Log.d("EDITOR / RewriteDataInManifest", "All files rewritten successfully.");
+        });
     }
 
-    private void changePackageInFile(File file, String oldPackage, String newPackage) {
-        try {
-            // Читання вмісту файлу
-            BufferedReader reader = new BufferedReader(new FileReader(file));
-            StringBuilder content = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // Заміна старого пакету на новий
-                line = line.replace(oldPackage, newPackage);
-                content.append(line).append("\n");
-            }
-            reader.close();
-
-            // Запис зміненого вмісту назад у файл
-            FileWriter writer = new FileWriter(file);
-            writer.write(content.toString());
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void createDirectoryIfNotExists(String path) {
+        File directory = new File(path);
+        if (!directory.exists() && !directory.mkdirs()) {
+            Log.e("EDITOR / CreateDirectory", "Failed to create directory: " + path);
         }
     }
 }
