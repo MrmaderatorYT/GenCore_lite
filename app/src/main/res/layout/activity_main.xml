@@ -110,7 +110,7 @@
         android:layout_above="@id/title"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
-        android:text="0.1.1 OEAP"
+        android:text="0.1.2 OEAP"
         android:textSize="20sp" />
 
 

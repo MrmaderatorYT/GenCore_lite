@@ -35,8 +35,6 @@
             android:name=".editor.FilePicker"
             android:exported="false" />
 
-        <service android:name=".PluginResultsService" />
-
         <activity
             android:name=".editor.Editor"
             android:exported="false" />

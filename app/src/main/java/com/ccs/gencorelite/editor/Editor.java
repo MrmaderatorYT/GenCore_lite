@@ -11,6 +11,8 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.MenuItem;
@@ -19,7 +21,6 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -35,6 +36,10 @@ import com.ccs.gencorelite.compiler.RewriterConstClasses;
 import com.ccs.gencorelite.compiler.RewriterMain;
 import com.ccs.gencorelite.compiler.RewriterSettings;
 import com.ccs.gencorelite.data.PreferenceConfig;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textview.MaterialTextView;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,6 +51,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
@@ -58,15 +65,25 @@ public class Editor extends AppCompatActivity {
     public static final String SCRIPT_NAME = "build_script.sh";
     public static final String SCRIPTS_FOLDER_NAME = "scripts";
     public static final String MAIN_FOLDER_NAME = "GenCoreLite";
+    
+    // UI компоненти
     private ListView fileList;
-
     private EditText editor;
-    private ImageView compile, add_file, docs;
+    private MaterialToolbar toolbar;
+    private MaterialButton btnUndo, btnRedo;
+    private MaterialTextView tvFileName;
+    private FloatingActionButton fabCompile, fabAddFile, fabDocs;
+    
+    // Змінні для undo/redo функціональності
+    private List<String> undoStack = new ArrayList<>();
+    private List<String> redoStack = new ArrayList<>();
+    private boolean isUndoRedoOperation = false;
+    private static final int MAX_UNDO_STACK_SIZE = 50;
+    
     private boolean isRunning = true;
     private String title, package_project;
     private String previousText = ""; // зберігаємо попередній текст
-
-    //private final Handler handler;
+    private String currentFileName = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,179 +102,257 @@ public class Editor extends AppCompatActivity {
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
 
+        initViews();
+        setupTextWatcher();
+        setupClickListeners();
+        checkPermissions();
+        setupAutoSave();
+        setupFileList();
+    }
+
+    private void initViews() {
+        toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        
         fileList = findViewById(R.id.fileList);
         editor = findViewById(R.id.editor);
-        compile = findViewById(R.id.compile);
-        add_file = findViewById(R.id.add_new_file);
+        btnUndo = findViewById(R.id.btn_undo);
+        btnRedo = findViewById(R.id.btn_redo);
+        tvFileName = findViewById(R.id.tv_file_name);
+        fabCompile = findViewById(R.id.fab_compile);
+        fabAddFile = findViewById(R.id.fab_add_file);
+        fabDocs = findViewById(R.id.fab_docs);
+        
         SyntaxHighlighter.applySyntaxHighlighting(editor);
-        docs = findViewById(R.id.docs_btn);
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
-        }
-        Timer timer = new Timer();
-        TimerTask task = new TimerTask() {
+        updateUndoRedoButtons();
+    }
+
+    private void setupTextWatcher() {
+        editor.addTextChangedListener(new TextWatcher() {
             @Override
-            public void run() {
-                // Викликати ваш метод кожні 10 секунд
-                saveData(title, "messages.gc_l", editor.getText().toString());
-                saveData(title, "colors.gc_l", editor.getText().toString());
-                saveData(title, "main_screen.gc_l", editor.getText().toString());
-                saveData(title, "settings_screen.gc_l", editor.getText().toString());
-                Log.i("EDITOR / SaveData (calling in onCreate", "Text of saved file: [messages.gc_l]: "+editor.getText().toString());
-                Log.i("EDITOR / SaveData (calling in onCreate", "Text of saved file: [colors.gc_l]: "+editor.getText().toString());
-            }
-        };
-
-        // Запускати завдання кожні 10 секунд (10000 мілісекунд)
-        timer.schedule(task, 1, 10000);
-
-        docs.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Editor.this, DocsActivity.class);
-                startActivity(intent);
-                overridePendingTransition(0, 0);
-            }
-        });
-        compile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                AssetManager assetManager = getAssets();
-                InputStream inputStream = null;
-                File documentsDirectory = new File("/storage/emulated/0/Documents/GenCoreLite/scripts");
-                if (!documentsDirectory.exists()) {
-                    documentsDirectory.mkdirs(); // Створюємо директорію, якщо вона не існує
-                }
-                File destinationFile = new File(documentsDirectory, "build_script.sh");
-                File build = new File(documentsDirectory, "/test/build.sh");
-                File apksigner = new File(documentsDirectory, "apksigner");
-                File apksigner_jar = new File(documentsDirectory, "apksigner.jar");
-                File zipalign = new File(documentsDirectory, "zipalign");
-                File destinationFile1 = new File(documentsDirectory, "test.sh");
-                File androidJar = new File(documentsDirectory, "android.jar");
-
-
-                final boolean b = destinationFile.setExecutable(true);
-                final boolean a = destinationFile1.setExecutable(true);
-                final boolean c = zipalign.setExecutable(true);
-                final boolean d = apksigner.setExecutable(true);
-                final boolean f = apksigner_jar.setExecutable(true);
-                final boolean buildScript = apksigner.setExecutable(true);
-
-                // Launch Termux with the script
-                try {
-                    inputStream = assetManager.open("build_script.sh");
-                    copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
-                    copyFileFromAssets(Editor.this, "test.sh", destinationFile1);
-                    copyFileFromAssets(Editor.this, "android.jar", androidJar);
-                    copyFileFromAssets(Editor.this, "zipalign", zipalign);
-                    copyFileFromAssets(Editor.this, "apksigner", apksigner);
-                    copyFileFromAssets(Editor.this, "apksigner.jar", apksigner_jar);
-                    File destinationFolder = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/");
-                    copyAssets(Editor.this, "project/res", "/storage/emulated/0/Documents/GenCoreLite/scripts/res");
-                    //copyAssets(Editor.this, "project", "/storage/emulated/0/Documents/GenCoreLite/scripts");
-                    copyAssets(Editor.this, "test", "/storage/emulated/0/Documents/GenCoreLite/scripts");
-                    launchTermuxScript();
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                String sourceFilePath = "file:///android_asset/build_script.sh";
-                rewriteData(getFilesDir() + "/Projects/" + title + "/" + title + "/messages.gc_l");
-                rewriteDataInMain(getFilesDir() + "/Projects/" + title + "/" + title + "/main_screen.gc_l");
-                rewriteDataInSettings(getFilesDir() + "/Projects/" + title + "/" + title + "/settings_screen.gc_l");
-                rewriteConstFiles();
-
-                PackageManager pm = Editor.this.getPackageManager();
-                Intent intent = pm.getLaunchIntentForPackage("com.termux");
-
-                if (intent != null) {
-
-                    try {
-                        // Відкриття файлу з папки assets
-
-                        // Читання даних з файлу
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                        StringBuilder stringBuilder = new StringBuilder();
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            stringBuilder.append(line).append("\n");
-                        }
-                        reader.close();
-
-                        // Отримання зчитаного вмісту файлу у вигляді рядка
-                        String fileContent = stringBuilder.toString();
-
-                        // Тепер ви можете використати fileContent за потребою
-
-                        // Наприклад, вивести його в лог
-                        Log.d("FileContent", fileContent);
-
-                        // Відправка команди у термінал Termux
-                        try {
-                            Process process = Runtime.getRuntime().exec("sh");
-                            OutputStream outputStream = process.getOutputStream();
-                            outputStream.write(fileContent.getBytes());
-                            outputStream.flush();
-                            outputStream.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    // Якщо Termux не знайдено на пристрої
-                    Toast.makeText(Editor.this, "Termux не знайдено на пристрої", Toast.LENGTH_SHORT).show();
-                }
-//
-            }
-        });
-
-        // Масив з назвами файлів (припустимо, що це ваш список файлів)
-        String[] files = {"messages.gc_l", "colors.gc_l", "main_screen.gc_l", "settings_screen.gc_l"};
-
-        // Адаптер для списку файлів
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_list_item_1, files);
-        fileList.setAdapter(adapter);
-
-        // Реєстрація ListView для контекстного меню
-        registerForContextMenu(fileList);
-
-        // Обробник подій для вибору файлу зі списку
-        fileList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // Отримуємо назву вибраного файлу
-                String fileName = fileList.getItemAtPosition(position).toString();
-                // Можна використовувати це ім'я файлу для завантаження тексту файлу та відображення його в редакторі
-                // З цієї точки ви можете реалізувати завантаження тексту файлу та відображення його в полі редактора
-                if (fileName.contains("messages.gc_l")) {
-                    readFile(title, "messages.gc_l");
-                } else if (fileName.contains("colors.gc_l")) {
-                    readFile(title, "colors.gc_l");
-                }else if(fileName.contains("main_screen.gc_l")){
-                    readFile(title, "main_screen.gc_l");
-                }else if(fileName.contains("settings_screen.gc_l")){
-                    readFile(title, "settings_screen.gc_l");
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Зберігаємо поточний стан для undo, якщо це не undo/redo операція
+                if (!isUndoRedoOperation && s.length() > 0) {
+                    addToUndoStack(s.toString());
                 }
             }
-        });
 
-        add_file.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                //openFilePicker();
-                Intent intent = new Intent(Editor.this, FilePicker.class);
-                startActivity(intent);
-                overridePendingTransition(0, 0);
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Очищаємо redo stack при новому введенні тексту
+                if (!isUndoRedoOperation) {
+                    redoStack.clear();
+                    updateUndoRedoButtons();
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                updateUndoRedoButtons();
             }
         });
     }
 
+    private void setupClickListeners() {
+        btnUndo.setOnClickListener(v -> performUndo());
+        btnRedo.setOnClickListener(v -> performRedo());
+        
+        fabDocs.setOnClickListener(v -> {
+            Intent intent = new Intent(Editor.this, DocsActivity.class);
+            startActivity(intent);
+            overridePendingTransition(0, 0);
+        });
+        
+        fabCompile.setOnClickListener(v -> performCompile());
+        
+        fabAddFile.setOnClickListener(v -> {
+            Intent intent = new Intent(Editor.this, FilePicker.class);
+            startActivity(intent);
+            overridePendingTransition(0, 0);
+        });
+    }
+
+    private void addToUndoStack(String text) {
+        undoStack.add(text);
+        // Обмежуємо розмір стеку
+        if (undoStack.size() > MAX_UNDO_STACK_SIZE) {
+            undoStack.remove(0);
+        }
+        updateUndoRedoButtons();
+    }
+
+    private void performUndo() {
+        if (!undoStack.isEmpty()) {
+            String currentText = editor.getText().toString();
+            redoStack.add(currentText);
+            
+            String previousText = undoStack.remove(undoStack.size() - 1);
+            
+            isUndoRedoOperation = true;
+            editor.setText(previousText);
+            editor.setSelection(previousText.length());
+            isUndoRedoOperation = false;
+            
+            updateUndoRedoButtons();
+            Toast.makeText(this, "Скасовано", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void performRedo() {
+        if (!redoStack.isEmpty()) {
+            String currentText = editor.getText().toString();
+            undoStack.add(currentText);
+            
+            String nextText = redoStack.remove(redoStack.size() - 1);
+            
+            isUndoRedoOperation = true;
+            editor.setText(nextText);
+            editor.setSelection(nextText.length());
+            isUndoRedoOperation = false;
+            
+            updateUndoRedoButtons();
+            Toast.makeText(this, "Повернуто", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void updateUndoRedoButtons() {
+        btnUndo.setEnabled(!undoStack.isEmpty());
+        btnRedo.setEnabled(!redoStack.isEmpty());
+        
+        // Оновлюємо прозорість кнопок
+        btnUndo.setAlpha(undoStack.isEmpty() ? 0.5f : 1.0f);
+        btnRedo.setAlpha(redoStack.isEmpty() ? 0.5f : 1.0f);
+    }
+
+    private void checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE);
+        }
+    }
+
+    private void setupAutoSave() {
+        Timer timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                if (!currentFileName.isEmpty()) {
+                    saveData(title, currentFileName, editor.getText().toString());
+                }
+            }
+        };
+        timer.schedule(task, 1, 10000); // Автозбереження кожні 10 секунд
+    }
+
+    private void setupFileList() {
+        String[] files = {"messages.gc_l", "colors.gc_l", "main_screen.gc_l", "settings_screen.gc_l"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, files);
+        fileList.setAdapter(adapter);
+        registerForContextMenu(fileList);
+
+        fileList.setOnItemClickListener((parent, view, position, id) -> {
+            String fileName = fileList.getItemAtPosition(position).toString();
+            loadFile(fileName);
+        });
+    }
+
+    private void loadFile(String fileName) {
+        // Очищаємо стеки при завантаженні нового файлу
+        undoStack.clear();
+        redoStack.clear();
+        
+        currentFileName = fileName;
+        tvFileName.setText(fileName);
+        
+        if (fileName.contains("messages.gc_l")) {
+            readFile(title, "messages.gc_l");
+        } else if (fileName.contains("colors.gc_l")) {
+            readFile(title, "colors.gc_l");
+        } else if (fileName.contains("main_screen.gc_l")) {
+            readFile(title, "main_screen.gc_l");
+        } else if (fileName.contains("settings_screen.gc_l")) {
+            readFile(title, "settings_screen.gc_l");
+        }
+        
+        updateUndoRedoButtons();
+    }
+
+    private void performCompile() {
+        // ... existing code ...
+        AssetManager assetManager = getAssets();
+        InputStream inputStream = null;
+        File documentsDirectory = new File("/storage/emulated/0/Documents/GenCoreLite/scripts");
+        if (!documentsDirectory.exists()) {
+            documentsDirectory.mkdirs();
+        }
+        File destinationFile = new File(documentsDirectory, "build_script.sh");
+        File build = new File(documentsDirectory, "/test/build.sh");
+        File apksigner = new File(documentsDirectory, "apksigner");
+        File apksigner_jar = new File(documentsDirectory, "apksigner.jar");
+        File zipalign = new File(documentsDirectory, "zipalign");
+        File destinationFile1 = new File(documentsDirectory, "test.sh");
+        File androidJar = new File(documentsDirectory, "android.jar");
+
+        final boolean b = destinationFile.setExecutable(true);
+        final boolean a = destinationFile1.setExecutable(true);
+        final boolean c = zipalign.setExecutable(true);
+        final boolean d = apksigner.setExecutable(true);
+        final boolean f = apksigner_jar.setExecutable(true);
+
+        try {
+            inputStream = assetManager.open("build_script.sh");
+            copyFileFromAssets(Editor.this, "build_script.sh", destinationFile);
+            copyFileFromAssets(Editor.this, "test.sh", destinationFile1);
+            copyFileFromAssets(Editor.this, "android.jar", androidJar);
+            copyFileFromAssets(Editor.this, "zipalign", zipalign);
+            copyFileFromAssets(Editor.this, "apksigner", apksigner);
+            copyFileFromAssets(Editor.this, "apksigner.jar", apksigner_jar);
+            
+            copyAssets(Editor.this, "project/res", "/storage/emulated/0/Documents/GenCoreLite/scripts/res");
+            copyAssets(Editor.this, "test", "/storage/emulated/0/Documents/GenCoreLite/scripts");
+            launchTermuxScript();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        
+        rewriteData(getFilesDir() + "/Projects/" + title + "/" + title + "/messages.gc_l");
+        rewriteDataInMain(getFilesDir() + "/Projects/" + title + "/" + title + "/main_screen.gc_l");
+        rewriteDataInSettings(getFilesDir() + "/Projects/" + title + "/" + title + "/settings_screen.gc_l");
+        rewriteConstFiles();
+
+        PackageManager pm = Editor.this.getPackageManager();
+        Intent intent = pm.getLaunchIntentForPackage("com.termux");
+
+        if (intent != null) {
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder stringBuilder = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    stringBuilder.append(line).append("\n");
+                }
+                reader.close();
+
+                String fileContent = stringBuilder.toString();
+                Log.d("FileContent", fileContent);
+
+                try {
+                    Process process = Runtime.getRuntime().exec("sh");
+                    OutputStream outputStream = process.getOutputStream();
+                    outputStream.write(fileContent.getBytes());
+                    outputStream.flush();
+                    outputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            Toast.makeText(Editor.this, "Termux не знайдено на пристрої", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     // Метод для створення контекстного меню
     @Override
@@ -275,7 +370,6 @@ public class Editor extends AppCompatActivity {
         String fileName = fileList.getItemAtPosition(info.position).toString();
         switch (item.getItemId()) {
             case R.id.rename_option:
-                // Додайте код для перейменування файлу тут
                 Toast.makeText(this, "Rename file: " + fileName, Toast.LENGTH_SHORT).show();
                 return true;
             default:
@@ -296,7 +390,16 @@ public class Editor extends AppCompatActivity {
                 sb.append(line).append("\n");
             }
             Log.i("EDITOR / ReadFile", "Text of file [" + fileName + "]: " + sb);
+            
+            // Очищаємо стеки при завантаженні файлу
+            undoStack.clear();
+            redoStack.clear();
+            
+            isUndoRedoOperation = true;
             editor.setText(sb.toString());
+            isUndoRedoOperation = false;
+            
+            updateUndoRedoButtons();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -316,19 +419,20 @@ public class Editor extends AppCompatActivity {
                 osw.write(data);
 
                 runOnUiThread(() -> {
-                    Toast.makeText(Editor.this, "Data was saved successfully", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Editor.this, "Дані збережено успішно", Toast.LENGTH_SHORT).show();
                     Log.d("EDITOR / SaveData", "Data was saved successfully");
                 });
             } catch (IOException e) {
                 e.printStackTrace();
                 runOnUiThread(() -> {
-                    Toast.makeText(Editor.this, "Trouble with saving data", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Editor.this, "Помилка збереження даних", Toast.LENGTH_SHORT).show();
                     Log.d("EDITOR / SaveData", "Trouble with saving data");
                 });
             }
             previousText = data; // Зберігаємо новий текст як попередній
         }
     }
+
     private void executeTermuxCommand() {
         try {
             Intent intent = new Intent("com.termux.RUN_COMMAND");
@@ -355,8 +459,6 @@ public class Editor extends AppCompatActivity {
         intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", false);
         intent.putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0");
         startService(intent);
-
-
     }
 
     @Override
@@ -365,7 +467,6 @@ public class Editor extends AppCompatActivity {
         if (requestCode == REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d("EDITOR / OnRequestPermissionsResult", "Permission granted");
-                //runTermuxCommand();
             } else {
                 Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
                 Log.d("EDITOR / OnRequestPermissionsResult", "Permission denied");
@@ -373,7 +474,6 @@ public class Editor extends AppCompatActivity {
         }
     }
 
-    //копіювання файлів з папки assets в інше місце (в нашому коді - в папку Documents)
     public static void copyFileFromAssets(Context context, String assetFilePath, File destinationFile) {
         try (InputStream inputStream = context.getAssets().open(assetFilePath);
              OutputStream outputStream = new FileOutputStream(destinationFile)) {
@@ -426,14 +526,12 @@ public class Editor extends AppCompatActivity {
         }
     }
 
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PICK_FILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (uri != null) {
-// Зберігаємо файл у відповідну папку
                 saveFileToFolder(uri);
             }
         }
@@ -510,35 +608,32 @@ public class Editor extends AppCompatActivity {
             new Rewriter.FileOperationTask(inputFilePath, outputPath, getApplicationContext()).execute();
         });
     }
+    
     private void rewriteDataInMain(String inputFilePath) {
-        // Шляхи до вхідного та вихідного файлів
-        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/"+"MainActivity.java"; // Шлях до вихідного файлу
+        String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/"+"MainActivity.java";
         Log.d("EDITOR / RewriteDataInMain", "Output path: ["+outputPath+"]");
         Log.d("EDITOR / RewriteDataInMain", "Input path: ["+inputFilePath+"]");
-        // Переконайтеся, що директорія вихідного файлу існує
         File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + package_project.replace('.', '/') + "/");
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
 
-        // Виклик AsyncTask для виконання операцій у фоновому потоці
         new RewriterMain.FileOperationTask(inputFilePath, outputPath, getApplicationContext()).execute();
     }
+
     private void rewriteDataInSettings(String inputFilePath) {
-        // Шляхи до вхідного та вихідного файлів
         String packagePath = package_project.replace('.', '/');
         String outputPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/Settings.java";
         Log.d("EDITOR / RewriteDataInSettings", "Input path: ["+inputFilePath+"]");
-        // Переконайтеся, що директорія вихідного файлу існує
         File outputDir = new File("/storage/emulated/0/Documents/GenCoreLite/scripts/java/" + packagePath + "/");
         Log.d("EDITOR / RewriteDataInSettings", "Output path: ["+outputPath+"]");
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
 
-        // Виклик AsyncTask для виконання операцій у фоновому потоці
         new RewriterSettings.FileOperationTask(inputFilePath, outputPath, getApplicationContext()).execute();
     }
+    
     private void rewriteConstFiles() {
         String packagePath = package_project.replace('.', '/');
         String manifestPath = "/storage/emulated/0/Documents/GenCoreLite/scripts/AndroidManifest.xml";
@@ -547,20 +642,16 @@ public class Editor extends AppCompatActivity {
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
-            // Створення директорій
             createDirectoryIfNotExists(dataPath);
             createDirectoryIfNotExists(systemPath);
 
-            // Видалення старого маніфесту
             File manifestFile = new File(manifestPath);
             if (manifestFile.exists() && !manifestFile.delete()) {
                 Log.e("EDITOR / RewriteDataInManifest", "Failed to delete old AndroidManifest.xml.");
             }
 
-            // Генерація нового маніфесту
             new RewriterConstClasses.FileOperationTask(manifestPath, getApplicationContext()).execute();
 
-            // Перетворення інших файлів
             RewriterConstClasses.rewriteExitConfirmationDialog(systemPath + "/ExitConfirmationDialog.java", package_project);
             RewriterConstClasses.rewriteWebAppInterface(dataPath + "/WebAppInterface.java", package_project);
             RewriterConstClasses.rewriteFileManager(dataPath + "/FileManager.java", package_project);

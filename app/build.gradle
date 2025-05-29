@@ -33,7 +33,7 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdk 34
         versionCode 1
-        versionName "0.1.1 OEAP"
+        versionName "0.1.2 OEAP"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -69,6 +69,16 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.activity:activity:1.9.1'
     implementation 'androidx.recyclerview:recyclerview:1.3.0'
-
-
+    
+    // Material Design 3 залежності
+    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
+    implementation 'com.google.android.material:material:1.11.0'
+    
+    // Поддержка multidex
+    implementation 'androidx.multidex:multidex:2.0.1'
+    
+    // DX tools for dex compilation
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">{{APP_NAME}}</string>
+    <string name="version_name">{{VERSION_NAME}}</string>
+    <string name="new_game">Нова гра</string>
+    <string name="continue_game">Продовжити</string>
+    <string name="settings">Налаштування</string>
+    <string name="exit">Вихід</string>
+</resources> 

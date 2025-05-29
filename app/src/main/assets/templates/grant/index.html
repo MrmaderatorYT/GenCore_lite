@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NovelCraft - Редактор візуальних новел для Android</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#037602',secondary:'#e0f2e0'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #f5f9f5 100%);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(3, 118, 2, 0.1);
+        }
+        .step-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 2.5rem;
+            right: -3rem;
+            width: 6rem;
+            height: 2px;
+            background-color: #037602;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-800">
+    <!-- Навігація -->
+    <nav class="w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" class="text-2xl font-['Pacifico'] text-primary">NovelCraft</a>
+            <div class="hidden md:flex space-x-8">
+                <a href="#features" class="font-medium hover:text-primary transition-colors">Особливості</a>
+                <a href="#demo" class="font-medium hover:text-primary transition-colors">Демонстрація</a>
+                <a href="#how-it-works" class="font-medium hover:text-primary transition-colors">Як це працює</a>
+                <a href="#pricing" class="font-medium hover:text-primary transition-colors">Ціни</a>
+            </div>
+            <a href="#download" class="bg-primary text-white px-6 py-2 !rounded-button font-medium hover:bg-opacity-90 transition-all whitespace-nowrap">Завантажити</a>
+        </div>
+    </nav>
+
+    <!-- Hero секція -->
+    <section class="w-full hero-gradient pt-24 pb-16 md:pt-32 md:pb-24" style="background-image: url('https://readdy.ai/api/search-image?query=modern%20minimal%20gradient%20background%20with%20soft%20white%20and%20very%20light%20green%20colors%2C%20clean%20design%2C%20abstract%20shapes%2C%20suitable%20for%20app%20presentation%2C%20left%20side%20empty%20for%20text%2C%20right%20side%20has%20subtle%20design%20elements&width=1920&height=800&seq=1&orientation=landscape'); background-size: cover; background-position: center;">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center w-full">
+            <div class="md:w-1/2 mb-10 md:mb-0 z-10">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">Створюйте візуальні новели легко</h1>
+                <p class="text-xl mb-8 text-gray-700 max-w-lg">Потужний редактор для розробки 2D візуальних новел на Android. Перетворіть свої історії на інтерактивні пригоди.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="#download" class="bg-primary text-white px-8 py-3 !rounded-button font-medium text-center hover:bg-opacity-90 transition-all whitespace-nowrap">Спробувати безкоштовно</a>
+                    <a href="#demo" class="border-2 border-primary text-primary px-8 py-3 !rounded-button font-medium text-center hover:bg-primary hover:text-white transition-all whitespace-nowrap">Переглянути демо</a>
+                </div>
+            </div>
+            <div class="md:w-1/2 flex justify-end">
+                <img src="https://readdy.ai/api/search-image?query=modern%20IDE%20interface%20for%20visual%20novel%20development%2C%20showing%20character%20sprites%2C%20dialogue%20boxes%2C%20and%20a%20coding%20panel%2C%20clean%20design%20with%20green%20accents%2C%20high-quality%203D%20render%2C%20professional%20software%20interface&width=800&height=600&seq=2&orientation=landscape" alt="NovelCraft IDE інтерфейс" class="rounded-lg shadow-xl w-full max-w-lg object-cover object-top">
+            </div>
+        </div>
+    </section>
+
+    <!-- Особливості продукту -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Особливості продукту</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Наш редактор надає всі необхідні інструменти для створення захоплюючих візуальних новел на платформі Android.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Особливість 1 -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md border border-gray-100 transition-all duration-300">
+                    <div class="w-14 h-14 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-6">
+                        <i class="ri-code-line text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Простий інтерфейс</h3>
+                    <p class="text-gray-600">Інтуїтивно зрозумілий інтерфейс з підтримкою drag-and-drop для швидкого створення сцен та діалогів.</p>
+                </div>
+                
+                <!-- Особливість 2 -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md border border-gray-100 transition-all duration-300">
+                    <div class="w-14 h-14 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-6">
+                        <i class="ri-gallery-line text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Бібліотека ресурсів</h3>
+                    <p class="text-gray-600">Вбудована колекція персонажів, фонів та звукових ефектів для швидкого старту розробки.</p>
+                </div>
+                
+                <!-- Особливість 3 -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md border border-gray-100 transition-all duration-300">
+                    <div class="w-14 h-14 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-6">
+                        <i class="ri-smartphone-line text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Android-оптимізація</h3>
+                    <p class="text-gray-600">Спеціально розроблено для мобільних пристроїв, з оптимізацією продуктивності та використання батареї.</p>
+                </div>
+                
+                <!-- Особливість 4 -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md border border-gray-100 transition-all duration-300">
+                    <div class="w-14 h-14 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-6">
+                        <i class="ri-tools-line text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Вбудовані інструменти</h3>
+                    <p class="text-gray-600">Редактори сценаріїв, персонажів та анімацій в одному пакеті для повного циклу розробки.</p>
+                </div>
+                
+                <!-- Особливість 5 -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md border border-gray-100 transition-all duration-300">
+                    <div class="w-14 h-14 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-6">
+                        <i class="ri-git-branch-line text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Розгалужені сюжети</h3>
+                    <p class="text-gray-600">Створюйте складні сюжетні лінії з розгалуженнями та умовними переходами для нелінійного геймплею.</p>
+                </div>
+                
+                <!-- Особливість 6 -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-md border border-gray-100 transition-all duration-300">
+                    <div class="w-14 h-14 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-6">
+                        <i class="ri-share-line text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Проста публікація</h3>
+                    <p class="text-gray-600">Експортуйте готові проекти безпосередньо в APK або публікуйте в Google Play Store одним натисканням.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Демонстрація IDE -->
+    <section id="demo" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Потужний редактор для ваших історій</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Ознайомтеся з нашим інтуїтивним інтерфейсом, розробленим спеціально для створення візуальних новел.</p>
+            </div>
+            
+            <div class="relative">
+                <img src="https://readdy.ai/api/search-image?query=detailed%20IDE%20interface%20for%20visual%20novel%20development%20with%20multiple%20panels%2C%20showing%20script%20editor%2C%20character%20sprites%2C%20background%20selection%2C%20and%20timeline.%20Modern%20UI%20design%20with%20green%20accent%20colors.%20High-quality%203D%20render%20showing%20professional%20software%20interface%20with%20labeled%20sections&width=1200&height=800&seq=3&orientation=landscape" alt="NovelCraft IDE інтерфейс" class="rounded-xl shadow-2xl w-full object-cover object-top">
+                
+                <!-- Підписи до елементів інтерфейсу -->
+                <div class="absolute top-[15%] left-[10%] bg-white px-3 py-1 rounded-full shadow-md border border-primary">
+                    <span class="text-sm font-medium text-primary">Редактор сценаріїв</span>
+                </div>
+                
+                <div class="absolute top-[30%] right-[15%] bg-white px-3 py-1 rounded-full shadow-md border border-primary">
+                    <span class="text-sm font-medium text-primary">Бібліотека персонажів</span>
+                </div>
+                
+                <div class="absolute bottom-[25%] left-[20%] bg-white px-3 py-1 rounded-full shadow-md border border-primary">
+                    <span class="text-sm font-medium text-primary">Панель діалогів</span>
+                </div>
+                
+                <div class="absolute bottom-[15%] right-[25%] bg-white px-3 py-1 rounded-full shadow-md border border-primary">
+                    <span class="text-sm font-medium text-primary">Часова шкала</span>
+                </div>
+            </div>
+            
+            <div class="mt-16 grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="ri-layout-2-line text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Гнучкий інтерфейс</h3>
+                    <p class="text-gray-600">Налаштовуйте робочий простір під свої потреби, переміщуючи та змінюючи розмір панелей.</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="ri-eye-line text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Попередній перегляд</h3>
+                    <p class="text-gray-600">Миттєво переглядайте зміни в режимі реального часу без необхідності компіляції.</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                        <i class="ri-code-box-line text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Візуальне програмування</h3>
+                    <p class="text-gray-600">Створюйте логіку гри за допомогою блоків коду без глибоких знань програмування.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Як це працює -->
+    <section id="how-it-works" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Як це працює</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Чотири прості кроки від ідеї до публікації вашої візуальної новели.</p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row justify-between items-start relative">
+                <!-- Крок 1 -->
+                <div class="step-item flex flex-col items-center text-center mb-12 md:mb-0 relative z-10 md:w-1/4">
+                    <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">1</div>
+                    <h3 class="text-xl font-semibold mb-2">Встановлення</h3>
+                    <p class="text-gray-600">Завантажте та встановіть NovelCraft на ваш Android-пристрій з Google Play Store.</p>
+                </div>
+                
+                <!-- Крок 2 -->
+                <div class="step-item flex flex-col items-center text-center mb-12 md:mb-0 relative z-10 md:w-1/4">
+                    <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">2</div>
+                    <h3 class="text-xl font-semibold mb-2">Створення проекту</h3>
+                    <p class="text-gray-600">Виберіть шаблон або почніть з чистого аркуша, налаштуйте основні параметри вашої гри.</p>
+                </div>
+                
+                <!-- Крок 3 -->
+                <div class="step-item flex flex-col items-center text-center mb-12 md:mb-0 relative z-10 md:w-1/4">
+                    <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">3</div>
+                    <h3 class="text-xl font-semibold mb-2">Розробка</h3>
+                    <p class="text-gray-600">Створюйте персонажів, пишіть діалоги, додавайте фони та музику для вашої історії.</p>
+                </div>
+                
+                <!-- Крок 4 -->
+                <div class="step-item flex flex-col items-center text-center relative z-10 md:w-1/4">
+                    <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">4</div>
+                    <h3 class="text-xl font-semibold mb-2">Публікація</h3>
+                    <p class="text-gray-600">Тестуйте, оптимізуйте та публікуйте вашу візуальну новелу в Google Play Store.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Відгуки користувачів -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Що кажуть наші користувачі</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Розробники з усього світу вже створюють захоплюючі візуальні новели за допомогою NovelCraft.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Відгук 1 -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <div class="text-primary">
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-6">"NovelCraft змінив мій підхід до створення візуальних новел. Тепер я можу працювати над проектами навіть у дорозі, використовуючи лише свій телефон!"</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-3">
+                            <span class="text-primary font-medium">ОК</span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">Олена Ковальчук</h4>
+                            <p class="text-sm text-gray-500">Інді-розробниця</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Відгук 2 -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <div class="text-primary">
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-6">"Інтуїтивний інтерфейс та потужні інструменти дозволили мені створити мою першу візуальну новелу всього за кілька тижнів. Неймовірний продукт!"</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-3">
+                            <span class="text-primary font-medium">МП</span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">Максим Петренко</h4>
+                            <p class="text-sm text-gray-500">Студент-програміст</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Відгук 3 -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <div class="text-primary">
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-half-fill"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-6">"Як викладач, я використовую NovelCraft для створення інтерактивних навчальних матеріалів. Мої студенти в захваті від такого формату навчання!"</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mr-3">
+                            <span class="text-primary font-medium">ІС</span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">Ірина Савченко</h4>
+                            <p class="text-sm text-gray-500">Викладачка літератури</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Заклик до дії -->
+    <section id="download" class="py-20 bg-primary">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6 text-white">Почніть створювати свою візуальну новелу вже сьогодні</h2>
+            <p class="text-white text-opacity-90 max-w-2xl mx-auto mb-8">Приєднуйтесь до тисяч розробників, які вже використовують NovelCraft для втілення своїх творчих ідей.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#" class="bg-white text-primary px-8 py-3 !rounded-button font-medium hover:bg-opacity-90 transition-all whitespace-nowrap flex items-center justify-center">
+                    <i class="ri-google-play-fill mr-2 text-xl"></i>
+                    Завантажити з Google Play
+                </a>
+                <a href="#" class="border-2 border-white text-white px-8 py-3 !rounded-button font-medium hover:bg-white hover:text-primary transition-all whitespace-nowrap">Спробувати онлайн-демо</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="bg-white py-12 border-t border-gray-100">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <a href="#" class="text-2xl font-['Pacifico'] text-primary mb-4 inline-block">NovelCraft</a>
+                    <p class="text-gray-600 mb-6">Потужний редактор для створення 2D візуальних новел на Android.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+                            <i class="ri-facebook-fill"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+                            <i class="ri-twitter-fill"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+                            <i class="ri-instagram-fill"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors">
+                            <i class="ri-youtube-fill"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-lg mb-4">Продукт</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-gray-600 hover:text-primary transition-colors">Особливості</a></li>
+                        <li><a href="#demo" class="text-gray-600 hover:text-primary transition-colors">Демонстрація</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Ціни</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Оновлення</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Дорожня карта</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-lg mb-4">Ресурси</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Документація</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Навчальні матеріали</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Форум спільноти</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Блог</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">API</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-lg mb-4">Компанія</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Про нас</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Кар'єра</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Контакти</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Партнерство</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary transition-colors">Преса</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-500 mb-4 md:mb-0">&copy; 2025 NovelCraft. Усі права захищені.</p>
+                <div class="flex space-x-6">
+                    <a href="terms.html" class="text-gray-500 hover:text-primary transition-colors">Умови використання</a>
+                    <a href="privacy.html" class="text-gray-500 hover:text-primary transition-colors">Політика конфіденційності</a>
+                    <a href="contacts.html" class="text-gray-500 hover:text-primary transition-colors">Контакти</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script id="navbarScroll">
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbar = document.querySelector('nav');
+            
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 10) {
+                    navbar.classList.add('shadow-md');
+                } else {
+                    navbar.classList.remove('shadow-md');
+                }
+            });
+        });
+    </script>
+
+    <script id="smoothScroll">
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

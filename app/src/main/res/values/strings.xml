@@ -14,4 +14,12 @@
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
 
+    <!-- Editor menu strings -->
+    <string name="documentation">Документація</string>
+    <string name="new_file">Новий файл</string>
+    <string name="save">Зберегти</string>
+    <string name="settings">Налаштування</string>
+    <string name="undo">Скасувати</string>
+    <string name="redo">Повернути</string>
+
 </resources>
