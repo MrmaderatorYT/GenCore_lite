@@ -143,11 +143,13 @@
                     android:scrollbars="vertical"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:fontFamily="monospace"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="#212121"
+                    android:textSize="14sp"
                     android:hint="Виберіть файл для редагування..."
-                    android:textColorHint="?attr/colorOnSurfaceVariant"
+                    android:textColorHint="#757575"
                     android:inputType="textMultiLine|textNoSuggestions"
-                    android:importantForAutofill="no" />
+                    android:importantForAutofill="no"
+                    android:lineSpacingExtra="2dp" />
 
             </com.google.android.material.card.MaterialCardView>
 
